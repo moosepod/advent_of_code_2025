@@ -15,10 +15,6 @@ def iterate_gold(dial, count, direction, amount):
     count += int(abs(dial)/100)
     dial = dial % 100
     return dial, count
-                
-    print(f"Final dial: {dial}")                    
-    print(f"Answer: {count}")
-
 
 def solve(iterate_f, path="day_1/inputs/input.txt", initial_dial=50):
     dial = 50
