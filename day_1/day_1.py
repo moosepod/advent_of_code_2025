@@ -21,17 +21,15 @@ def solve_gold(path="day_1/inputs/input.txt"):
     with open(path) as f:
         for line in f.read().split("\n"):
             if line:
+                initial_dial = dial
                 direction = 1 if line[0] == 'R' else -1
-                amount = int(line[1:])                                    
-                for i in range(0, amount):
-                    dial += direction
-                    if dial == 100:
-                        count += 1
-                        dial = 0
-                    elif dial == 0:
-                        count += 1
-                    elif dial < 0:
-                        dial = 99
+                amount = int(line[1:])
+                dial += amount * direction
+                if dial <= 0 and initial_dial != 0:
+                    count += 1
+                count += int(abs(dial)/100)
+                dial = dial % 100
+
                 
     print(f"Final dial: {dial}")                    
     print(f"Answer: {count}")    
