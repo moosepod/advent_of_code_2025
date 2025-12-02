@@ -10,8 +10,17 @@ def iterate_silver(id1,id2):
                 results.append(n)
     return results
 
-def iterate_gold():
-    pass
+def iterate_gold(id1,id2):
+    results = []
+    for n in range(id1,id2+1):
+        s = str(n)
+        for l in range(1,len(s)):
+            if s == s[0:l] * (len(s)//l):
+                results.append(n)
+                break
+            
+    return results
+
 
 def solve(iterate_f, path="day_2/inputs/input.txt"):
     s = 0
