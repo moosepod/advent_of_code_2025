@@ -1,4 +1,6 @@
 import argparse
+import re
+import itertools
 
 def iterate_silver(id1,id2):
     results = []
@@ -21,17 +23,13 @@ def iterate_gold(id1,id2):
             
     return results
 
-
 def solve(iterate_f, path="day_2/inputs/input.txt"):
-    s = 0
     with open(path) as f:
-        for line in f.read().split("\n"):
-            if line:
-                for pair in line.split(','):
-                    id1,id2 = pair.split('-')
-                    s += sum(iterate_f(int(id1),int(id2)))
+        s = [iterate_f(int(id1),int(id2)) for id1,id2 in re.findall(r"(\d+)-(\d+)", f.read())]
 
-    print(f"Answer: {s}")
+    a = sum(list(itertools.chain(*s)))
+
+    print(f"Answer: {a}")
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
