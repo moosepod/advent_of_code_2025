@@ -1,17 +1,28 @@
 import argparse
 
-def iterate_silver(dial, count, direction, amount):
-    pass
+def iterate_silver(id1,id2):
+    results = []
+    for n in range(id1,id2+1):
+        s = str(n)
+        l = len(s)
+        if l % 2 == 0:
+            if s[0:l//2] == s[l//2:]:
+                results.append(n)
+    return results
 
 def iterate_gold():
     pass
 
 def solve(iterate_f, path="day_2/inputs/input.txt"):
+    s = 0
     with open(path) as f:
         for line in f.read().split("\n"):
-            pass
+            if line:
+                for pair in line.split(','):
+                    id1,id2 = pair.split('-')
+                    s += sum(iterate_f(int(id1),int(id2)))
 
-    print("Answer will go here")
+    print(f"Answer: {s}")
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
