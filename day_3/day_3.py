@@ -3,16 +3,17 @@ import re
 import itertools
 
 def iterate_silver(line):
+    return max(int(''.join(s)) for s in itertools.combinations(line, 2))
+
+def iterate_gold(line):
     m = 0
-    for s in itertools.combinations(line, 2):
-        x = int(s[0]) * 10 + int(s[1])
+    for s in itertools.combinations(line, 12):
+        x = int(''.join(s))
         if x > m:
             m = x
 
     return m
 
-def iterate_gold():
-    pass
 
 def solve(iterate_f, path="day_3/inputs/input.txt"):
     lines = []
