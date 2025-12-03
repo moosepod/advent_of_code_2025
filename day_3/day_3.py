@@ -4,17 +4,10 @@ import itertools
 
 def iterate_silver(line):
     m = 0
-    for ai,a in enumerate([int(c) for c in line]):
-        for bi,b in enumerate([int(c) for c in line]):
-            if ai > bi:
-                x = b * 10 + a
-            elif ai < bi:
-                x = a * 10 + b
-            else:
-                x = 0
-            if x > m:
-                m = x
-                ma,mb = a,b
+    for s in itertools.combinations(line, 2):
+        x = int(s[0]) * 10 + int(s[1])
+        if x > m:
+            m = x
 
     return m
 
