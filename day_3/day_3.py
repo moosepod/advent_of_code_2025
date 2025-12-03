@@ -5,14 +5,33 @@ import itertools
 def iterate_silver(line):
     return max(int(''.join(s)) for s in itertools.combinations(line, 2))
 
+def digit_prefixed_substrings(line, digit_s):
+    # Find all indexes of this number
+    indexes = [i for i in range(0,len(line)-12) if line[i] == digit_s]
+    return [line[i:] for i in indexes]
+
 def iterate_gold(line):
     m = 0
-    for s in itertools.combinations(line, 12):
-        x = int(''.join(s))
-        if x > m:
-            m = x
 
-    return m
+    # Find the max prefix digit for a 12-char string
+    md = max(int(line[i]) for i in range(0,len(line)-12))
+
+    # From max digit and working down, find smallest possible substring with largest possible prefixes
+    prefix = ""
+    candidate = line
+    for digit in range(md, 0, -1):
+        lines = digit_prefixed_substrings(line, str(digit))
+        if lines:
+            prefix += str(digit)
+            candidate = lines[0][1:]
+
+    if len(line) > len(prefix+candidate):
+        print(f"Error: {prefix+candidate} longer than {line}!")
+        return 0
+
+    print(prefix,candidate)
+    
+    return max(int(''.join(s)) for s in itertools.combinations(prefix+candidate, 12))
 
 
 def solve(iterate_f, path="day_3/inputs/input.txt"):
