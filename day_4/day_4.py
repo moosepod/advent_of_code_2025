@@ -89,14 +89,22 @@ def solve_silver(grid,size):
     return [location for location in locations if location[1] < 4]
 
 def solve_gold(grid,size):
-    return 0
+    removed = []
+    while True:
+        locations = [(p,c) for p,c in solve_silver(grid,size) if c < 4]
+        if not locations:
+            return removed
+        p,_ = locations[0]
+        grid[p] = '.'
+        removed.append(p)
+    
+    return []
 
-def solve(iterate_f, path="day_4/inputs/input.txt"):
+def solve(solve_f, path="day_4/inputs/input.txt"):
     grid, size = load_grid(path)
     lines = []
     t = time.time()
-    locations = solve_silver(grid,size)
-    #print(dump_grid(grid, size, extra={l[0]:"x" for l in locations}))
+    locations = solve_f(grid,size)
     a = len(locations)
     
     print(f"Answer: {a} in {time.time() - t:.2f}s")
