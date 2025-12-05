@@ -1,10 +1,10 @@
 .PHONY: day-1-silver day-1-gold day-2-silver-day-2-gold
 
-day-5-gold: day_5/day_5.py
-	uv run day_5/day_5.py gold
+day-5-2: day_5/day_5.py
+	uv run day_5/day_5.py 2
 
-day-5-silver: day_5/day_5.py
-	uv run day_5/day_5.py silver
+day-5-1: day_5/day_5.py
+	uv run day_5/day_5.py 1
 
 day-4-gold: day_4/day_4.py
 	uv run day_4/day_4.py gold
