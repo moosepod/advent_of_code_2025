@@ -1,5 +1,6 @@
 import time
 import argparse
+import itertools
 
 def solve_part_1(fresh, all):
     count = 0
@@ -58,26 +59,15 @@ def join_ranges(r1,r2):
 def compress_ranges(ranges):
     new_ranges = []
     changed = False
-    for i in range(0,len(ranges)):
-        a1,b1 = ranges[i]
-        for j in range(i,len(ranges)):
-            if j != i:
-                a2,b2 = ranges[j]
-                l, r = join_ranges((a1,b1),(a2,b2))
-                if r:
-                    new_ranges.extend(l)
-                    changed = True
-                    #print(".....break",l)
-                    break
-        if not changed:
-            new_ranges.append((a1,b1))
-        else:
-            for x in range(i+1, len(ranges)):
-                if x != j:
-                    new_ranges.append(ranges[x])
+
+    for r1,r2 in itertools.combinations(ranges, 2):
+        l, joined = join_ranges(r1,r2)
+        if joined:
+            new_ranges = [r for r in ranges if r not in (r1,r2)]
+            new_ranges.extend(l)
             return new_ranges, True
 
-    return new_ranges, changed
+    return ranges, False
 
 def solve_part_2(fresh, _):
     
@@ -86,9 +76,6 @@ def solve_part_2(fresh, _):
     ranges = fresh
     while True:
         new_ranges, changed = compress_ranges(ranges)
-        #print(">>>>")
-        #print(ranges)
-        #print(new_ranges)
         if not changed:
             break
         ranges = new_ranges
