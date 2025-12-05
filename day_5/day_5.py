@@ -35,7 +35,6 @@ def join_ranges(r1,r2):
     ([(12, 20)], True)
     
     """
-    #print("...comparing",r1,r2)
     a1,b1 = r1
     a2,b2 = r2
 
@@ -45,14 +44,8 @@ def join_ranges(r1,r2):
     if a2 >= a1 and b2 <= b1:
         return [(a1,b1)], True
 
-    if b1 < a2 :
+    if b1 < a2 or a2 > b1 or a1 > b2:
         return [r1,r2],False
-
-    if a2 > b1:
-        return [r1,r2],False
-
-    if a1 > b2:
-        return [r1,r2],False        
 
     return [(min(a1,a2),max(b1,b2))], True        
 
