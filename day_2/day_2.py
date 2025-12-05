@@ -2,10 +2,10 @@ import argparse
 import re
 import itertools
 
-def iterate_silver(id1,id2):
+def iterate_part_1(id1,id2):
     return [n for n in range(id1,id2+1) if str(n)[0:len(str(n))//2] == str(n)[len(str(n))//2:]]
 
-def iterate_gold(id1,id2):
+def iterate_part_2(id1,id2):
     results = []
     for n in range(id1,id2+1):
         s = str(n)
@@ -26,12 +26,12 @@ def solve(iterate_f, path="day_2/inputs/input.txt"):
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("star")
+    parser.add_argument("part")
     args = parser.parse_args()
-    if args.star == "silver":
-        solve(iterate_silver)
-    elif args.star == "gold":
-        solve(iterate_gold)
+    if args.part == "1":
+        solve(iterate_part_1)
+    elif args.part == "2":
+        solve(iterate_part_2)
     else:
-        print("First argument must be silver or gold")
+        print("First argument must be 1 or 2")
 
