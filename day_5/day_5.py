@@ -1,12 +1,32 @@
+import time
 import argparse
 
-def solve(solve_f, path="day_4/inputs/input.txt"):
-    grid, size = load_grid(path)
-    lines = []
-    t = time.time()
-    locations = solve_f(grid,size)
-    a = len(locations)
+def solve_silver(fresh, all):
+    count = 0
+
+    for i in all:
+        for a,b in fresh:
+            if i >= a and i <= b:
+                count += 1
+                break
     
+    return count
+
+def solve(solve_f, path="day_5/inputs/input.txt"):
+    fresh = []
+    all = []
+    
+    t = time.time()
+    with open(path) as f:
+        for line in f.read().split("\n"):
+            line = line.strip()
+            if line:
+                if '-' in line:
+                    fresh.append([int(x) for x in line.split('-')])
+                else:
+                    all.append(int(line))
+
+    a = solve_f(fresh, all)
     print(f"Answer: {a} in {time.time() - t:.2f}s")
         
 if __name__ == "__main__":
