@@ -1,13 +1,13 @@
 import argparse
 
-def iterate_silver(dial, count, direction, amount):
+def iterate_part_1(dial, count, direction, amount):
     dial = (dial + (amount * direction)) % 100
     if dial == 0:
         count += 1
 
     return dial, count
 
-def iterate_gold(dial, count, direction, amount):
+def iterate_part_2(dial, count, direction, amount):
     initial_dial = dial
     dial += amount * direction
     if dial <= 0 and initial_dial != 0:
@@ -31,12 +31,12 @@ def solve(iterate_f, path="day_1/inputs/input.txt", initial_dial=50):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("star")
+    parser.add_argument("part")
     args = parser.parse_args()
-    if args.star == "silver":
-        solve(iterate_silver)
-    elif args.star == "gold":
-        solve(iterate_gold)
+    if args.part == "1":
+        solve(iterate_part_1)
+    elif args.part == "2":
+        solve(iterate_part_2)
     else:
-        print("First argument must be silver or gold")
+        print("First argument must be 1 or 2")
 

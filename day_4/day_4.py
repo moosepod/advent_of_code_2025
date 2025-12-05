@@ -78,7 +78,7 @@ def dump_grid(grid: Grid, size: Size, message: str="", int_grid=False, extra:dic
             s+=str(c) if c is not None else '.'
     return s
 
-def solve_silver(grid,size):
+def solve_part_1(grid,size):
     locations = []
     for x in range(0,size[WIDTH]):
         for y in range(0,size[HEIGHT]):
@@ -88,10 +88,10 @@ def solve_silver(grid,size):
 
     return [location for location in locations if location[1] < 4]
 
-def solve_gold(grid,size):
+def solve_part_2(grid,size):
     removed = []
     while True:
-        locations = [(p,c) for p,c in solve_silver(grid,size) if c < 4]
+        locations = [(p,c) for p,c in solve_part_1(grid,size) if c < 4]
         if not locations:
             return removed
         p,_ = locations[0]
@@ -100,7 +100,7 @@ def solve_gold(grid,size):
     
     return []
 
-def solve(solve_f, path="day_4/inputs/input.txt"):
+def solve(solve_f, path="day_4/inputs/test.txt"):
     grid, size = load_grid(path)
     lines = []
     t = time.time()
@@ -108,15 +108,15 @@ def solve(solve_f, path="day_4/inputs/input.txt"):
     a = len(locations)
     
     print(f"Answer: {a} in {time.time() - t:.2f}s")
-        
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("star")
+    parser.add_argument("part")
     args = parser.parse_args()
-    if args.star == "silver":
-        solve(solve_silver)
-    elif args.star == "gold":
-        solve(solve_gold)
+    if args.part == "1":
+        solve(solve_part_1)
+    elif args.part == "2":
+        solve(solve_part_2)
     else:
-        print("First argument must be silver or gold")
+        print("First argument must be 1 or 2")
 

@@ -3,7 +3,7 @@ import argparse
 import re
 import itertools
 
-def iterate_silver(line):
+def iterate_part_1(line):
     return max(int(''.join(s)) for s in itertools.combinations(line, 2))
 
 def collapse(line):
@@ -55,7 +55,7 @@ def collapse(line):
             
     return result
 
-def iterate_gold(line):
+def iterate_part_2(line):
     candidate = collapse(line)
     return int(candidate)
 
@@ -72,12 +72,12 @@ def solve(iterate_f, path="day_3/inputs/input.txt"):
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("star")
+    parser.add_argument("part")
     args = parser.parse_args()
-    if args.star == "silver":
-        solve(iterate_silver)
-    elif args.star == "gold":
-        solve(iterate_gold)
+    if args.part == "1":
+        solve(iterate_part_1)
+    elif args.part == "2":
+        solve(iterate_part_2)
     else:
-        print("First argument must be silver or gold")
+        print("First argument must be 1 or 2")
 
