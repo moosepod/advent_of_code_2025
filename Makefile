@@ -1,4 +1,10 @@
-.PHONY: day-1-1 day-1-2 day-2-1 day-2-2 day-3-1 day-3-2 day-4-1 day-4-2 day-5-1 day-5-2
+.PHONY: day-1-1 day-1-2 day-2-1 day-2-2 day-3-1 day-3-2 day-4-1 day-4-2 day-5-1 day-5-2 day-6-1 day 6-2
+
+day-6-2: day_6/day_6.py
+	uv run day_6/day_6.py 2
+
+day-6-1: day_6/day_6.py
+	uv run day_6/day_6.py 1
 
 day-5-2: day_5/day_5.py
 	uv run day_5/day_5.py 2
