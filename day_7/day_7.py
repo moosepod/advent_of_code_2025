@@ -1,6 +1,6 @@
 # Started at 10:56
 
-
+import math
 import time
 import argparse
 import re
@@ -87,7 +87,6 @@ def solve_part_1(grid,size,start,max_y=0):
     if max_y == 0:
         max_y = size[HEIGHT]+1
     for y in range(1,max_y):
-        print(y,splits)
         new_beams = []
         for x in beams:
             if grid.get((x,y)) == '^':
@@ -110,10 +109,30 @@ def solve_part_1(grid,size,start,max_y=0):
     #print(dump_grid(grid,size))
     return splits
 
-def solve_part_2(grid,size,start):
-    return 0
+def count_timelines(grid, size, y):
+    for x in range(0,size[WIDTH]+1):
+        if grid.get((x,y)) == '|':
+            if grid.get((x,y+1)) == '.':
+                grid[(x,y+1)] = '|'
 
-def solve(solve_f, path="day_7/inputs/input.txt"):
+    if y+1 < size[HEIGHT]:
+        count_timelines(grid,size,y+2)
+
+def solve_part_2(grid,size,start,max_y=0):
+    # Take two lines -- initial and next
+    # Find each | in first line
+    # If nothing below it, just propogate
+    # If splitter below it, count both sides
+    grid[start] = '|'
+
+    a = count_timelines(grid,size,0)
+                
+    print(">>>",start)
+    print(dump_grid(grid,size))
+    
+    return a
+
+def solve(solve_f, path="day_7/inputs/test.txt"):
     grid, size = load_grid(path)
     start = [p for p,c in grid.items() if c == 'S']
     
