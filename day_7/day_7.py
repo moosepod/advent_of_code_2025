@@ -1,4 +1,5 @@
-# Started at 10:56
+# Started at 10:56 went to 11:45
+# 2:30-
 
 import math
 import time
@@ -81,33 +82,25 @@ def dump_grid(grid: Grid, size: Size, message: str="", int_grid=False, extra:dic
             s+=str(c) if c is not None else '.'
     return s
 
-def solve_part_1(grid,size,start,max_y=0):
-    beams = [start[X]]
-    splits = 0
-    if max_y == 0:
-        max_y = size[HEIGHT]+1
-    for y in range(1,max_y):
-        new_beams = []
-        for x in beams:
-            if grid.get((x,y)) == '^':
-                b = False
-                for p in ((x-1,y),(x+1,y)):
-                    if p[X] >= 0 and p[X] <= size[WIDTH]:
-                        if grid.get(p) != '|':
-                            grid[p] = '|'
-                            b = True
-                            new_beams.append(p[X])
-                if b:
-                    splits += 1
+def propogate(grid, size, beam_x, beam_y=0,seen={}):
+    if seen.get((beam_x, beam_y)):
+        return 0
+    seen[(beam_x,beam_y)] = True
+    if beam_x < 0 or beam_x > size[WIDTH] or beam_y >= size[HEIGHT]:
+        return 0
+    
+    if grid[(beam_x,beam_y)] == '^':
+        #grid[(beam_x-1,beam_y)] = '|'
+        #grid[(beam_x+1,beam_y)] = '|'                
+        return propogate(grid, size, beam_x-1, beam_y+1) + propogate(grid, size, beam_x+1, beam_y+1) + 1
 
-            else:
-                grid[(x,y)] = '|'
-                new_beams.append(x)
-        beams = new_beams
-                
-    #print(">>>",start)
+    #grid[(beam_x,beam_y)] = '|'
+    return propogate(grid, size, beam_x, beam_y+1)    
+
+def solve_part_1(grid,size,start,max_y=0):
+    a = propogate(grid,size,start[X], 1)
     #print(dump_grid(grid,size))
-    return splits
+    return a
 
 def count_timelines(grid, size, y):
     for x in range(0,size[WIDTH]+1):
@@ -127,12 +120,12 @@ def solve_part_2(grid,size,start,max_y=0):
 
     a = count_timelines(grid,size,0)
                 
-    print(">>>",start)
-    print(dump_grid(grid,size))
+    #print(">>>",start)
+    #print(dump_grid(grid,size))
     
     return a
 
-def solve(solve_f, path="day_7/inputs/test.txt"):
+def solve(solve_f, path="day_7/inputs/input.txt"):
     grid, size = load_grid(path)
     start = [p for p,c in grid.items() if c == 'S']
     
