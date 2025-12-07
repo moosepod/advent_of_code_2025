@@ -1,5 +1,3 @@
-# Started at 10:56 went to 11:45
-# 2:30-
 
 import math
 import time
@@ -82,48 +80,76 @@ def dump_grid(grid: Grid, size: Size, message: str="", int_grid=False, extra:dic
             s+=str(c) if c is not None else '.'
     return s
 
-def propogate(grid, size, beam_x, beam_y=0,seen={}):
-    if seen.get((beam_x, beam_y)):
-        return 0
-    seen[(beam_x,beam_y)] = True
+def propogate(grid, size, beam_x, beam_y,seen):
     if beam_x < 0 or beam_x > size[WIDTH] or beam_y >= size[HEIGHT]:
         return 0
     
-    if grid[(beam_x,beam_y)] == '^':
-        #grid[(beam_x-1,beam_y)] = '|'
-        #grid[(beam_x+1,beam_y)] = '|'                
-        return propogate(grid, size, beam_x-1, beam_y+1) + propogate(grid, size, beam_x+1, beam_y+1) + 1
+    p = (beam_x, beam_y)
+    if seen.get(p):
+        return 0
+    
+    seen[p] = True
+    
+    if grid[p] == '^':
+        return propogate(grid, size, beam_x-1, beam_y+1,seen) + propogate(grid, size, beam_x+1, beam_y+1,seen) + 1
 
-    #grid[(beam_x,beam_y)] = '|'
-    return propogate(grid, size, beam_x, beam_y+1)    
+    return propogate(grid, size, beam_x, beam_y+1,seen)    
+
+
+def draw_beams(grid, size, beam_x, beam_y,seen):
+    if beam_x < 0 or beam_x > size[WIDTH] or beam_y >= size[HEIGHT]:
+        return 1
+    
+    p = (beam_x, beam_y)
+    if seen.get(p):
+        return 0
+    
+    seen[p] = True
+    
+    if grid[p] == '^':
+        grid[(beam_x-1,beam_y)] = '|'
+        grid[(beam_x+1,beam_y)] = '|'        
+        draw_beams(grid, size, beam_x-1, beam_y+1,seen)
+        draw_beams(grid, size, beam_x+1, beam_y+1,seen)
+    else:
+        grid[(beam_x,beam_y)] = '|'                
+        draw_beams(grid, size, beam_x, beam_y+1,seen)
+
+def count_timelines(grid, size, x,y, visited={}):
+    count = 0
+
+    if visited.get((x,y)) is not None:
+        return visited[(x,y)]
+
+    if grid.get((x-1,y)) == '^':
+        count += count_timelines(grid, size, x-1,y-1)
+    if grid.get((x+1,y)) == '^':
+        count += count_timelines(grid, size, x+1,y-1)
+    if grid.get((x,y-1)) == '|':
+        count += count_timelines(grid, size, x,y-1)        
+    elif grid.get((x,y-1)) == 'S':
+        count +=1
+
+    visited[(x,y)] = count
+    
+    return count
 
 def solve_part_1(grid,size,start,max_y=0):
-    a = propogate(grid,size,start[X], 1)
+    seen = {}
+    a = propogate(grid,size,start[X], 1, seen)
     #print(dump_grid(grid,size))
     return a
-
-def count_timelines(grid, size, y):
-    for x in range(0,size[WIDTH]+1):
-        if grid.get((x,y)) == '|':
-            if grid.get((x,y+1)) == '.':
-                grid[(x,y+1)] = '|'
-
-    if y+1 < size[HEIGHT]:
-        count_timelines(grid,size,y+2)
 
 def solve_part_2(grid,size,start,max_y=0):
-    # Take two lines -- initial and next
-    # Find each | in first line
-    # If nothing below it, just propogate
-    # If splitter below it, count both sides
-    grid[start] = '|'
-
-    a = count_timelines(grid,size,0)
-                
-    #print(">>>",start)
-    #print(dump_grid(grid,size))
+    seen = {}
+    grid[start] = 'S'
+    draw_beams(grid,size,start[X], 1,seen)
+    count = 0
+    for x in range(0, size[WIDTH]):
+        if grid[(x,size[HEIGHT]-1)] == '|':
+            count += count_timelines(grid, size, x,size[HEIGHT]-1)
     
-    return a
+    return count
 
 def solve(solve_f, path="day_7/inputs/input.txt"):
     grid, size = load_grid(path)
