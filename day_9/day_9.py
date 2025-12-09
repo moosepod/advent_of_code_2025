@@ -23,6 +23,25 @@ Y = 1
 P = 0
 V = 1
 
+LABEL_OFFSET = -2
+
+DIRECTIONS = {
+    "NE": (1,-1), 
+    "E": (1,0), 
+    "SE": (1,1), 
+    "S": (0,1), 
+    "SW": (-1,1), 
+    "W": (-1,0), 
+    "NW": (-1,-1), 
+    "N": (0,-1), 
+    }
+
+NESW = (DIRECTIONS["N"], DIRECTIONS["E"], DIRECTIONS["S"], DIRECTIONS["W"])
+
+def padd(p1: Point, p2: Point) -> Point:
+    return (p1[X] + p2[X], p1[Y] + p2[Y])
+
+
 def dump_grid(grid: Grid, size: Size, message: str="", int_grid=False, extra:dict[Point,str] = None, labels=False) -> str:
     s = message
     for row in range(LABEL_OFFSET if labels else 0,size[1]):
@@ -91,7 +110,26 @@ def update_size(size, p1, p2):
         size = size[X], p2[Y]+1
 
     return size
-    
+
+def flood_fill(grid, size, p,c):
+    if grid.get(p) is not None or p[X] < 0 or p[Y] > size[X] or p[Y] < 0 or p[Y] > size[Y]:
+        return
+
+    grid[p] = c
+    for d in NESW:
+        flood_fill(grid, size, padd(p,d), c)
+
+def valid_rect_size(grid, ul, lr): 
+    a = 0
+    for x in range(ul[X],lr[X]+1):
+        for y in range(ul[Y],lr[Y]+1):
+            if grid.get((x,y)) in ('#','X'):
+                a+=1
+            else:
+                return 0
+
+    return a
+        
 def solve_part_2(path="day_9/inputs/test.txt"):
     t = time.time()
 
@@ -109,10 +147,26 @@ def solve_part_2(path="day_9/inputs/test.txt"):
         draw_line(grid, size, p1,p2)
 
     draw_line(grid,size, points[0], points[-1])
+    flood_fill(grid, size, (points[0][X]+1,points[0][Y]+1),'X')
+
+    rects = set()
+
+    for p1, p2 in itertools.combinations(points,2):
+        ul = (min(p1[X],p2[X]), min(p1[Y],p2[Y]))
+        lr = (max(p1[X],p2[X]), max(p1[Y],p2[Y]))
+        rects.add((ul,lr))
+        
+    max_area = 0
+    rect = (0,0)
+    
+    for ul,lr in list(rects):
+        a = valid_rect_size(grid, ul, lr)
+        if a > max_area:
+            max_area = a
+            rect = (p1,p2)    
             
-    print(dump_grid(grid,size))
-    a = 0
-    print(f"Answer: {a} in {time.time() - t:.2f}s")    
+    #print(dump_grid(grid,size))
+    print(f"Answer: {max_area} in {time.time() - t:.2f}s")    
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
