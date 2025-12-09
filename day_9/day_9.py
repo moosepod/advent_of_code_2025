@@ -111,17 +111,6 @@ def update_size(size, p1, p2):
 
     return size
 
-def flood_fill(grid, size, p,c):
-    q = [p]
-
-    while q:
-        p = q.pop()
-        if grid.get(p) is not None or p[X] < 0 or p[Y] > size[X] or p[Y] < 0 or p[Y] > size[Y]:
-            continue
-        grid[p] = c
-        for d in NESW:
-            q.append(padd(p,d))
-
 def valid_rect_size(grid, ul, lr): 
     a = 0
     for x in range(ul[X],lr[X]+1):
@@ -132,48 +121,137 @@ def valid_rect_size(grid, ul, lr):
                 return 0
 
     return a
+
+# https://bryceboe.com/2006/10/23/line-segment-intersection-algorithm/
+
+def count_intersections(polygon, p):
+    count = 0
+
+    for p1,p2 in polygon:
+        if p1[X] == p2[X]:
+            if p[Y] >= p1[Y] and p[Y] <= p2[Y]:
+                count += 1
+                print(p,"intersects on Y",p1,p2)
+        else:
+            if p1[Y] == p2[Y]:
+                if p[X] >= p1[X] and p[X] <= p2[X]:
+                    count += 1
+                    print(p,"intersects on X",p1,p2)                    
+    
+    return count
+
+def is_horizontal(line):
+    return line[0][Y] == line[1][Y]
+
+def is_vertical(line):
+    return line[0][X] == line[1][X]
+
+def point_on_line(p, line):
+    if is_vertical(line):
+        y1,y2 = line[0][Y],line[1][Y]
+        if y2 < y1:
+            y1,y2 = y2,y1
+            
+        if p[X] == line[0][X] and p[Y] >= y1 and p[Y] <= y2:
+            return True
+        
+        return False
+
+    if is_horizontal(line):    
+        x1,x2 = line[0][X],line[1][X]
+        if x2 < x1:
+            x1,x2 = x2,x1
+            
+        if p[Y] == line[0][Y] and p[X] >= x1 and p[X] <= x2:
+            return True
+        
+        return False
+    
+    return False
+
+def point_to_right(p, line):
+    if is_horizontal(line):
+        return False # only check vertical
+
+    if p[X] < line[0][X]:
+        return False # point to left of line
+
+    y1,y2 = line[0][Y],line[1][Y]
+    if y2 < y1:
+        uy1,y2 = y2,y1
+    
+    if p[Y] < y1 or p[Y] > y2:
+        return False # Above/below
+
+    return True
+
+def check_point_in_polygon(p,polygon):
+    intersection_count = 0
+    for line in polygon:
+        if point_on_line(p,line):
+            return 1
+
+        if point_to_right(p, line):
+            intersection_count += 1
+
+    return intersection_count > 0 and intersection_count % 2 == 1
         
 def solve_part_2(path="day_9/inputs/input.txt"):
+    # Treat lines as a polygon
+    # Iterate through all combinations of points (deduped)
+    # - For a rect to count, it has to be fully enclosed by the polyon
+    # - A rect is in the polygon if:
+    #   - The following is true for all four points of the rectanble
+    #     - The point is either on an edge of the polygon
+    #     - The point is in a polygon
+    #       - In is checked by the even/odd algorithm. Only care about verticle lines and raycast to 0,0 and count intersections
+    # Waht if check for any points in the rect?
     t = time.time()
+
+    # Needs to handle the "H" case
+    
 
     grid = {}
     size = (0,0)
 
-    print(">>> Loading points")
+    #print("Loading points")
     points = []
     with open(path) as f:
         for line in f:
             points.append(tuple([int(x) for x in line.strip().split(',')]))
 
-    print("Drawing grid")
-    for i in range(0, len(points)-1):
-        p1,p2 = points[i],points[i+1]
-        size = update_size(size, p1,p2)
-        draw_line(grid, size, p1,p2)
+    polygon = []
+    for i in range(0,len(points)-1):
+        polygon.append((points[i],points[i+1]))
+    polygon.append((points[0],points[-1]))
 
-    draw_line(grid,size, points[0], points[-1])
-    print("Filling grid")
-    flood_fill(grid, size, (points[0][X]+1,points[0][Y]+1),'X')
-
+    #print("Generating rects from",len(points),"points")    
     rects = set()
-
-    print("Generating rects")
     for p1, p2 in itertools.combinations(points,2):
         ul = (min(p1[X],p2[X]), min(p1[Y],p2[Y]))
         lr = (max(p1[X],p2[X]), max(p1[Y],p2[Y]))
-        rects.add((ul,lr))
+        rects.add((ul,(ul[X], lr[Y]), lr, (lr[X], ul[Y])))
 
-    print("Solving")
+    #rects = [((2,3), (9,3), (2,5),(9,5))]
+
+    # Check "winning" rect and see if it makes sense?
+    #print("Checking intersections for",len(rects),"rects")
+    # Too high: 3044300328
+    # Too high 2970174461
+    # too large
     max_area = 0
-    rect = (0,0)
-    
-    for ul,lr in list(rects):
-        a = valid_rect_size(grid, ul, lr)
-        if a > max_area:
-            max_area = a
-            rect = (p1,p2)    
+    for idx,verticies in enumerate(rects):
+        if idx % 1000 == 0:
+            print("Checking",idx,"of",len(rects))
+        c = sum([check_point_in_polygon(v,polygon) for v in verticies])
+        #print(verticies,"->",c)
+        if c == 4:
+            a = (abs(verticies[0][Y] - verticies[2][Y]) + 1) * (abs(verticies[0][X] - verticies[2][X]) + 1)
+            if a > max_area:
+                max_area = a
             
-    #print(dump_grid(grid,size))
+            #print("Candidate:",verticies,a)
+
     print(f"Answer: {max_area} in {time.time() - t:.2f}s")    
 
 if __name__ == "__main__":
