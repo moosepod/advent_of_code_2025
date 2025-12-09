@@ -112,12 +112,15 @@ def update_size(size, p1, p2):
     return size
 
 def flood_fill(grid, size, p,c):
-    if grid.get(p) is not None or p[X] < 0 or p[Y] > size[X] or p[Y] < 0 or p[Y] > size[Y]:
-        return
+    q = [p]
 
-    grid[p] = c
-    for d in NESW:
-        flood_fill(grid, size, padd(p,d), c)
+    while q:
+        p = q.pop()
+        if grid.get(p) is not None or p[X] < 0 or p[Y] > size[X] or p[Y] < 0 or p[Y] > size[Y]:
+            continue
+        grid[p] = c
+        for d in NESW:
+            q.append(padd(p,d))
 
 def valid_rect_size(grid, ul, lr): 
     a = 0
@@ -130,32 +133,37 @@ def valid_rect_size(grid, ul, lr):
 
     return a
         
-def solve_part_2(path="day_9/inputs/test.txt"):
+def solve_part_2(path="day_9/inputs/input.txt"):
     t = time.time()
 
     grid = {}
     size = (0,0)
 
+    print(">>> Loading points")
     points = []
     with open(path) as f:
         for line in f:
             points.append(tuple([int(x) for x in line.strip().split(',')]))
 
+    print("Drawing grid")
     for i in range(0, len(points)-1):
         p1,p2 = points[i],points[i+1]
         size = update_size(size, p1,p2)
         draw_line(grid, size, p1,p2)
 
     draw_line(grid,size, points[0], points[-1])
+    print("Filling grid")
     flood_fill(grid, size, (points[0][X]+1,points[0][Y]+1),'X')
 
     rects = set()
 
+    print("Generating rects")
     for p1, p2 in itertools.combinations(points,2):
         ul = (min(p1[X],p2[X]), min(p1[Y],p2[Y]))
         lr = (max(p1[X],p2[X]), max(p1[Y],p2[Y]))
         rects.add((ul,lr))
-        
+
+    print("Solving")
     max_area = 0
     rect = (0,0)
     
