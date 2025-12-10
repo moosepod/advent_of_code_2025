@@ -78,30 +78,58 @@ def solve_machine(machine):
 
     return -1
 
+def find_candidates(machine):
+    candidates = []
+    for i in range(1,len(machine.buttons)):
+        for p in itertools.combinations(machine.buttons, i):
+            joltages = [0] * machine.l
+            mask = 0
+            for b in p:
+                mask = mask ^ b.mask
+                for i,j in enumerate(b.joltages):
+                    if j == 1:
+                        joltages[i] = 1
+
+            #print(joltages,machine.joltages)
+            if mask == machine.target and [1 for j in joltages if j] == [1 for j in machine.joltages if j]:
+                candidates.append(p)
+
+    return candidates
+
 def add_joltages(j1,j2):
     return [j1[i] + j2[i] for i in range(0, len(j1))]
 
-def solve_machine_with_joltages(machine, button_sets, index):
-    # If lights match and joltages match, return success
-    if count > 10:
-        return 0
-    #print(" " *count,joltages)
-    if lights == machine.target and joltages == machine.joltages:
-        print("FOUND")
-        return count
-    
+def add_double_joltages(j1,j2):
+    return [j1[i] + (j2[i] * 2) for i in range(0, len(j1))]
+
+
+def sub_double_joltages(j1,j2):
+    return [j1[i] - (j2[i] * 2) for i in range(0, len(j1))]
+
+def minimize_joltage(joltages, target_joltages, machine_buttons):
     # If any joltage over, return 0
+    if joltages == target_joltages:
+        #print("...found")
+        return 1
+    
     for i in range(0, len(joltages)):
-        if joltages[i] > machine.joltages[i]:
+        if joltages[i] > target_joltages[i]:
             return 0
 
-    min_c = 100000
-    for button in machine.buttons:
-        c = solve_machine_with_joltages(lights ^ button.mask, add_joltages(button.joltages, joltages), machine, count+1)
-        if c and c < min_c:
-            min_c = c
+    # Always press twice to cycle
+    for button in machine_buttons:
+        new_joltages = add_double_joltages(joltages, button.joltages)
+        minimize_joltage(new_joltages, target_joltages, machine_buttons)
 
-    return min_c
+    return 0
+
+def button_matching_joltage(target_joltage, button):
+    for i in range(0, len(target_joltage)):
+        # Button is 1 but target is untoucned
+        if button.joltages[i] and not target_joltage[i]:
+            return False
+
+    return True
 
 def solve_part_1(path="day_10/inputs/input.txt"):
     t = time.time()
@@ -114,7 +142,31 @@ def solve_part_1(path="day_10/inputs/input.txt"):
         #print(bits_to_lights(machine.target), m)
 
         
-    print(f"Answer: {a} in {time.time() - t:.2f}s")    
+    print(f"Answer: {a} in {time.time() - t:.2f}s")
+
+def joltage_exceeded(a, b):
+    for i in range(0,len(a)):
+        if a[i] > b[i]:
+            return True
+
+    return False
+    
+
+def apply_matches(matching, joltage, target_joltage):
+    pressed = 0
+    print(joltage,target_joltage)
+    for _, button in matching:
+        while True:
+            if joltage == target_joltage:
+                return pressed
+            joltage = add_double_joltages(joltage, button.joltages)
+            if joltage_exceeded(joltage, target_joltage):
+                #print("Exceeded with:",joltage,"vs",target_joltage)                
+                joltage = sub_double_joltages(joltage, button.joltages)
+                break # Move onto next match
+            
+            pressed += 2
+
 
 def solve_part_2(path="day_10/inputs/test.txt"):
     t = time.time()
@@ -122,28 +174,29 @@ def solve_part_2(path="day_10/inputs/test.txt"):
 
     # Any button applied twice is a nop
     # So:
-    # - find a sequence that works
-    # - then compare the jolts
+    # - find all combos of single buttons that reach outcome
+    # -solve th rest
     
     machines = load_machines(path)
+    checked = 0
     for machine in machines:
-        # Bucket based on touching a place
-        button_sets = []
-        for i in range(0, machine.l):
-            button_sets.append([])
-            for button in machine.buttons:
-                if button.joltages[i] == 1:
-                    button_sets[-1].append(button)
+        candidates = find_candidates(machine)
+        min_presses = 10000
+        for candidate in candidates:
+            pressed = 0
+            joltages = [0] * machine.l
+            for b in candidate:
+                joltages = add_joltages(joltages, b.joltages)
+            matching = [(sum([j for j in b.joltages]), b) for b in machine.buttons if button_matching_joltage(machine.joltages, b)]
+            matching.sort(key=lambda x: x[0], reverse=True)
 
-        # EITHER button set is key OR mods are key
-        # Applying twice = same result, but 2+ joltage
-        # Anything applied twice _only_ serves to adjust joltage.
-        # So optimize to 1,1,1,1 first?
-        # So for instance: 2, 4, 3, 6
-        m = solve_machine_with_joltages(machine, button_sets, 0)
-        #a += m
-        break
+            pressed = apply_matches(matching, joltages, machine.joltages)
+            if pressed and pressed < min_presses:
+                min_presses = pressed
+        print(min_presses)
 
+                    
+                    
     print(f"Answer: {a} in {time.time() - t:.2f}s")
     
 if __name__ == "__main__":
