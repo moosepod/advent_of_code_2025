@@ -194,36 +194,60 @@ def check_point_in_polygon(p,polygon):
         if point_to_right(p, line):
             intersection_count += 1
 
-    return intersection_count > 0 and intersection_count % 2 == 1
+    return intersection_count > 0 and intersection_count % 2 == 1    
         
-def solve_part_2(path="day_9/inputs/input.txt"):
+def solve_part_2(path="day_9/inputs/test.txt"):
     # Treat lines as a polygon
-    # Iterate through all combinations of points (deduped)
-    # - For a rect to count, it has to be fully enclosed by the polyon
-    # - A rect is in the polygon if:
-    #   - The following is true for all four points of the rectanble
-    #     - The point is either on an edge of the polygon
-    #     - The point is in a polygon
-    #       - In is checked by the even/odd algorithm. Only care about verticle lines and raycast to 0,0 and count intersections
-    # Waht if check for any points in the rect?
-    t = time.time()
-
-    # Needs to handle the "H" case
-    
-
+    # From each edge of the space, find the first intersection with a line
+    # TRY THIS IDEA: does any line from UL to LR intersect any line of the polygon. If so, throw it out!
     grid = {}
     size = (0,0)
 
-    #print("Loading points")
+    # Load points
     points = []
     with open(path) as f:
         for line in f:
             points.append(tuple([int(x) for x in line.strip().split(',')]))
 
+    # Reset origin to 0,0
+    origin = (min(p[X] for p in points),min(p[Y] for p in points))
+    points = [(p[X]-origin[X], p[Y]-origin[Y]) for p in points]
+    bounds = ((min(p[X] for p in points),min(p[Y] for p in points)),(max(p[X] for p in points),max(p[Y] for p in points)))
+    print("Bounds:",bounds)
+
+    # Turn into polygon
     polygon = []
     for i in range(0,len(points)-1):
         polygon.append((points[i],points[i+1]))
+
     polygon.append((points[0],points[-1]))
+    size = padd((1,1),bounds[1])
+    for p1,p2 in polygon:
+        draw_line(grid, size, p1,p2)
+        grid[p1] = '#'
+        grid[p2] = '#'
+
+    print(dump_grid(grid,size))
+
+    # Remove the edges on the bounds
+    new_polygon = []
+    for p1,p2 in polygon:    
+        if p1[X] == p2[X]:
+            if p1[X] == 0 or p1[X] == size[X]:
+                continue
+        if p1[Y] == p2[Y]:
+            if p1[Y] == 0 or p1[Y] == size[Y]:
+                continue
+        new_polygon.append((p1,p2))
+
+    print()
+    grid = {}
+    for p1,p2 in new_polygon:
+        draw_line(grid, size, p1,p2)
+        grid[p1] = '#'
+        grid[p2] = '#'
+    print(dump_grid(grid,size))
+    return
 
     #print("Generating rects from",len(points),"points")    
     rects = set()
@@ -243,14 +267,11 @@ def solve_part_2(path="day_9/inputs/input.txt"):
     for idx,verticies in enumerate(rects):
         if idx % 1000 == 0:
             print("Checking",idx,"of",len(rects))
-        c = sum([check_point_in_polygon(v,polygon) for v in verticies])
-        #print(verticies,"->",c)
-        if c == 4:
-            a = (abs(verticies[0][Y] - verticies[2][Y]) + 1) * (abs(verticies[0][X] - verticies[2][X]) + 1)
-            if a > max_area:
-                max_area = a
-            
-            #print("Candidate:",verticies,a)
+        expected_area = (abs(verticies[0][X]-verticies[2][X])+1) * (abs(verticies[0][Y]-verticies[2][Y])+1)
+        fill_area = flood_fill_count(verticies, polygon)
+        if fill_area == expected_area:
+            if expected_area > max_area:
+                max_area = expected_area
 
     print(f"Answer: {max_area} in {time.time() - t:.2f}s")    
 
