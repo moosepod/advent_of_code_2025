@@ -78,17 +78,30 @@ def solve_machine(machine):
 
     return -1
 
-def solve_machine_with_jolts(machine):
-    for i in range(1,10):
-        for p in itertools.combinations(machine.buttons, i):
-            mask = 0
-            for b in p:
-                mask = mask ^ b
+def add_joltages(j1,j2):
+    return [j1[i] + j2[i] for i in range(0, len(j1))]
 
-            if mask == machine.target:
-                return i
+def solve_machine_with_joltages(machine, button_sets, index):
+    # If lights match and joltages match, return success
+    if count > 10:
+        return 0
+    #print(" " *count,joltages)
+    if lights == machine.target and joltages == machine.joltages:
+        print("FOUND")
+        return count
+    
+    # If any joltage over, return 0
+    for i in range(0, len(joltages)):
+        if joltages[i] > machine.joltages[i]:
+            return 0
 
-    return -1
+    min_c = 100000
+    for button in machine.buttons:
+        c = solve_machine_with_joltages(lights ^ button.mask, add_joltages(button.joltages, joltages), machine, count+1)
+        if c and c < min_c:
+            min_c = c
+
+    return min_c
 
 def solve_part_1(path="day_10/inputs/input.txt"):
     t = time.time()
@@ -114,8 +127,24 @@ def solve_part_2(path="day_10/inputs/test.txt"):
     
     machines = load_machines(path)
     for machine in machines:
-        print(machine)
-    print(f"Answer: {a} in {time.time() - t:.2f}s")    
+        # Bucket based on touching a place
+        button_sets = []
+        for i in range(0, machine.l):
+            button_sets.append([])
+            for button in machine.buttons:
+                if button.joltages[i] == 1:
+                    button_sets[-1].append(button)
+
+        # EITHER button set is key OR mods are key
+        # Applying twice = same result, but 2+ joltage
+        # Anything applied twice _only_ serves to adjust joltage.
+        # So optimize to 1,1,1,1 first?
+        # So for instance: 2, 4, 3, 6
+        m = solve_machine_with_joltages(machine, button_sets, 0)
+        #a += m
+        break
+
+    print(f"Answer: {a} in {time.time() - t:.2f}s")
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
