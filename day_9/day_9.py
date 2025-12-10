@@ -41,6 +41,9 @@ NESW = (DIRECTIONS["N"], DIRECTIONS["E"], DIRECTIONS["S"], DIRECTIONS["W"])
 def padd(p1: Point, p2: Point) -> Point:
     return (p1[X] + p2[X], p1[Y] + p2[Y])
 
+def psub(p1: Point, p2: Point) -> Point:
+    return (p1[X] - p2[X], p1[Y] - p2[Y])
+
 
 def dump_grid(grid: Grid, size: Size, message: str="", int_grid=False, extra:dict[Point,str] = None, labels=False) -> str:
     s = message
@@ -111,95 +114,34 @@ def update_size(size, p1, p2):
 
     return size
 
-def valid_rect_size(grid, ul, lr): 
-    a = 0
-    for x in range(ul[X],lr[X]+1):
-        for y in range(ul[Y],lr[Y]+1):
-            if grid.get((x,y)) in ('#','X'):
-                a+=1
-            else:
-                return 0
+def cross(a, b):
+    return a[X]*b[Y] - a[Y]*b[X]
 
-    return a
+def orient(a,b,c):
+    return cross(psub(b,a), psub(c,a))
 
-# https://bryceboe.com/2006/10/23/line-segment-intersection-algorithm/
+def proper_inter(a,b,c,d):
+    oa = orient(c,d,a)
+    ob = orient(c,d,b)
+    oc = orient(a,b,c)
+    od = orient(a,b,d)
 
-def count_intersections(polygon, p):
-    count = 0
+    return oa*ob < 0 and oc*od < 0
 
-    for p1,p2 in polygon:
-        if p1[X] == p2[X]:
-            if p[Y] >= p1[Y] and p[Y] <= p2[Y]:
-                count += 1
-                print(p,"intersects on Y",p1,p2)
-        else:
-            if p1[Y] == p2[Y]:
-                if p[X] >= p1[X] and p[X] <= p2[X]:
-                    count += 1
-                    print(p,"intersects on X",p1,p2)                    
-    
-    return count
-
-def is_horizontal(line):
-    return line[0][Y] == line[1][Y]
-
-def is_vertical(line):
-    return line[0][X] == line[1][X]
-
-def point_on_line(p, line):
-    if is_vertical(line):
-        y1,y2 = line[0][Y],line[1][Y]
-        if y2 < y1:
-            y1,y2 = y2,y1
-            
-        if p[X] == line[0][X] and p[Y] >= y1 and p[Y] <= y2:
+def intercept(ul, lr, polygon):
+    for p1, p2 in polygon:
+        #print("Checking", (ul,lr), (p1,p2))
+        if proper_inter(ul, lr, p1, p2):
+            #print("....intercept")
             return True
-        
-        return False
 
-    if is_horizontal(line):    
-        x1,x2 = line[0][X],line[1][X]
-        if x2 < x1:
-            x1,x2 = x2,x1
-            
-        if p[Y] == line[0][Y] and p[X] >= x1 and p[X] <= x2:
-            return True
-        
-        return False
-    
     return False
 
-def point_to_right(p, line):
-    if is_horizontal(line):
-        return False # only check vertical
-
-    if p[X] < line[0][X]:
-        return False # point to left of line
-
-    y1,y2 = line[0][Y],line[1][Y]
-    if y2 < y1:
-        uy1,y2 = y2,y1
-    
-    if p[Y] < y1 or p[Y] > y2:
-        return False # Above/below
-
-    return True
-
-def check_point_in_polygon(p,polygon):
-    intersection_count = 0
-    for line in polygon:
-        if point_on_line(p,line):
-            return 1
-
-        if point_to_right(p, line):
-            intersection_count += 1
-
-    return intersection_count > 0 and intersection_count % 2 == 1    
-        
-def solve_part_2(path="day_9/inputs/test.txt"):
+def solve_part_2(path="day_9/inputs/input.txt"):
     # Treat lines as a polygon
     # From each edge of the space, find the first intersection with a line
     # TRY THIS IDEA: does any line from UL to LR intersect any line of the polygon. If so, throw it out!
+    t = time.time()
     grid = {}
     size = (0,0)
 
@@ -209,69 +151,54 @@ def solve_part_2(path="day_9/inputs/test.txt"):
         for line in f:
             points.append(tuple([int(x) for x in line.strip().split(',')]))
 
-    # Reset origin to 0,0
-    origin = (min(p[X] for p in points),min(p[Y] for p in points))
-    points = [(p[X]-origin[X], p[Y]-origin[Y]) for p in points]
-    bounds = ((min(p[X] for p in points),min(p[Y] for p in points)),(max(p[X] for p in points),max(p[Y] for p in points)))
-    print("Bounds:",bounds)
-
     # Turn into polygon
     polygon = []
     for i in range(0,len(points)-1):
         polygon.append((points[i],points[i+1]))
 
     polygon.append((points[0],points[-1]))
-    size = padd((1,1),bounds[1])
+
     for p1,p2 in polygon:
+        size = update_size(size, p1, p2)
+
+    for p1,p2 in polygon:        
         draw_line(grid, size, p1,p2)
         grid[p1] = '#'
         grid[p2] = '#'
 
-    print(dump_grid(grid,size))
+    #print(dump_grid(grid, size))
 
-    # Remove the edges on the bounds
-    new_polygon = []
-    for p1,p2 in polygon:    
-        if p1[X] == p2[X]:
-            if p1[X] == 0 or p1[X] == size[X]:
-                continue
-        if p1[Y] == p2[Y]:
-            if p1[Y] == 0 or p1[Y] == size[Y]:
-                continue
-        new_polygon.append((p1,p2))
-
-    print()
-    grid = {}
-    for p1,p2 in new_polygon:
-        draw_line(grid, size, p1,p2)
-        grid[p1] = '#'
-        grid[p2] = '#'
-    print(dump_grid(grid,size))
-    return
-
-    #print("Generating rects from",len(points),"points")    
     rects = set()
     for p1, p2 in itertools.combinations(points,2):
-        ul = (min(p1[X],p2[X]), min(p1[Y],p2[Y]))
-        lr = (max(p1[X],p2[X]), max(p1[Y],p2[Y]))
-        rects.add((ul,(ul[X], lr[Y]), lr, (lr[X], ul[Y])))
+        #ul = (min(p1[X],p2[X]), min(p1[Y],p2[Y]))
+        #lr = (max(p1[X],p2[X]), max(p1[Y],p2[Y]))
+        #rects.add((ul,(ul[X], lr[Y]), lr, (lr[X], ul[Y])))
+        #rects.add((ul,lr))
+        rects.add((p1,p2))
 
+
+        # https://www.reddit.com/r/algorithms/comments/9moad4/what_is_the_simplest_to_implement_line_segment/        
     #rects = [((2,3), (9,3), (2,5),(9,5))]
 
     # Check "winning" rect and see if it makes sense?
     #print("Checking intersections for",len(rects),"rects")
-    # Too high: 3044300328
+    # Too high:3044300328
     # Too high 2970174461
+    #          3161345466
     # too large
     max_area = 0
-    for idx,verticies in enumerate(rects):
+    for idx,(ul,lr) in enumerate(rects):
         if idx % 1000 == 0:
-            print("Checking",idx,"of",len(rects))
-        expected_area = (abs(verticies[0][X]-verticies[2][X])+1) * (abs(verticies[0][Y]-verticies[2][Y])+1)
-        fill_area = flood_fill_count(verticies, polygon)
-        if fill_area == expected_area:
-            if expected_area > max_area:
-                max_area = expected_area
+            print("Line",idx)
+        #print("Checking",ul,lr)
+        if not intercept(ul, lr, polygon):
+            a = abs(ul[X] - lr[X]) * abs(ul[Y] - lr[Y])
+            if a > max_area:
+                max_area = a
+                #print("no intercept",a)
+            #print("Valid rect",ul,lr, a)
+        #else:
+        #    print("Invalid rect",ul,lr)            
 
     print(f"Answer: {max_area} in {time.time() - t:.2f}s")    
 
