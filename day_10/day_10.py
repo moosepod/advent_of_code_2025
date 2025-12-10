@@ -6,10 +6,16 @@ import itertools
 from dataclasses import dataclass
 
 @dataclass
+class Button:
+    mask: int
+    joltages: list[int]
+
+@dataclass
 class Machine:
     target: int
     l: int
-    buttons: list[int]
+    buttons: list[Button]
+    joltages: list[int]
 
 
 def bits_to_lights(n):
@@ -36,19 +42,27 @@ def extract_buttons(s,l):
     buttons = []
     for b in s.split(" "):
         n = 0
-        for d in re.findall(r"(\d+)",b):
-            n |= 1 << l-int(d)-1
-        buttons.append(n)
+        joltages = [0] * l
+        for c in re.findall(r"(\d+)",b):
+            d = int(c)
+            n |= 1 << l-d-1
+            joltages[d] = 1
+        buttons.append(Button(mask=n, joltages=joltages))
 
     return buttons
-    
+
+def extract_joltages(s):
+    return [int(x) for x in s.split(",")]
+
 def load_machines(path) -> list[Machine]:
     machines = []
     with open(path) as f:
         for line in f:
-            if m := re.search(r"^\[([#.]+)\] (\(.+\))", line):
+            if m := re.search(r"^\[([#.]+)\] (\(.+\)) {(.+)}", line):
                 l = len(m.group(1))
-                machines.append(Machine(l=l,target=lights_to_bits(m.group(1)), buttons=extract_buttons(m.group(2),l)))
+                machine = Machine(l=l,target=lights_to_bits(m.group(1)), buttons=extract_buttons(m.group(2),l),joltages=extract_joltages(m.group(3)))
+                assert l == len(machine.joltages)
+                machines.append(machine)
 
     return machines
 
@@ -57,10 +71,21 @@ def solve_machine(machine):
         for p in itertools.combinations(machine.buttons, i):
             mask = 0
             for b in p:
+                mask = mask ^ b.mask
+
+            if mask == machine.target:
+                return i
+
+    return -1
+
+def solve_machine_with_jolts(machine):
+    for i in range(1,10):
+        for p in itertools.combinations(machine.buttons, i):
+            mask = 0
+            for b in p:
                 mask = mask ^ b
 
             if mask == machine.target:
-                #print("Hit target with", p,"at",i)
                 return i
 
     return -1
@@ -81,6 +106,15 @@ def solve_part_1(path="day_10/inputs/input.txt"):
 def solve_part_2(path="day_10/inputs/test.txt"):
     t = time.time()
     a = 0
+
+    # Any button applied twice is a nop
+    # So:
+    # - find a sequence that works
+    # - then compare the jolts
+    
+    machines = load_machines(path)
+    for machine in machines:
+        print(machine)
     print(f"Answer: {a} in {time.time() - t:.2f}s")    
     
 if __name__ == "__main__":
