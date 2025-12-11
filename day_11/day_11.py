@@ -35,11 +35,7 @@ def count_paths_bfs(graph, from_device, to_device, valid=None):
                     
     return counter
 
-def find_paths_bfs(graph, from_device, to_device, valid=None):
-    if not valid:
-        valid = {k:True for k in graph.keys()}
-    valid[to_device]=True
-    
+def find_paths_bfs(graph, from_device, to_device):
     paths = []
     counter = 0
     Q = queue.Queue()
@@ -49,9 +45,9 @@ def find_paths_bfs(graph, from_device, to_device, valid=None):
         if device == to_device:
             paths.append(path)
         else:
+            assert graph.get(device) is not None,f"{device} not found in graph"            
             for edge in graph.get(device):
-                if valid.get(edge):
-                    Q.put((edge, path+[edge]))
+                Q.put((edge, path+[edge]))
                     
     return paths
 
@@ -65,7 +61,7 @@ def path_exists(graph, from_device, to_device, valid=None):
         if device == to_device:
             return True
         else:
-            for edge in graph.get(device):
+            for edge in graph[device]:
                 if not edge in visited:
                     visited.add(edge)
                     if not valid or not valid.get(edge):
@@ -80,15 +76,7 @@ def solve_part_1(path="day_11/inputs/input.txt"):
     a = count_paths_bfs(graph, "you","out")
     print(f"Answer: {a} in {time.time() - t:.2f}s")
 
-def solve_part_2(path="day_11/inputs/test.txt"):
-    # Notes:
-    # - path from every node to out
-    # - 608 devices
-    # - break into paths to fft and paths to dac
-    # - no point in visiting a path if it doesn't hit out (though i'm not getting there)
-    # - Finding paths to fft limits to only 93
-    # - After research no paths visit dac before fft
-    
+def solve_part_2(path="day_11/inputs/input.txt"):    
     t = time.time()
     graph = load_graph(path)
     graph["out"] = []
@@ -101,48 +89,59 @@ def solve_part_2(path="day_11/inputs/test.txt"):
             valid_fft[device] = True    
 
     # Find all paths to fft
-    fft_paths = find_paths_bfs(graph, "svr","fft",valid_fft)
+    fft_graph = {k:v for k,v in graph.items() if valid_fft.get(k)}
+    for k,v in fft_graph.items():
+        fft_graph[k] = [d for d in v if fft_graph.get(d)]
+    fft_paths = find_paths_bfs(fft_graph, "svr","fft")
     print(len(fft_paths),"fft paths found")
 
     # Find valid paths to dac
     valid_dac = {}
     for device in graph.keys():
         if path_exists(graph, device, "dac"):
-            valid_dac[device] = True    
+            valid_dac[device] = True
     
     # Remove any previously visited devices from valid_dac
-    valid_dac = {d:True for d in valid_dac.keys() if d not in fft_paths}
+    for p in fft_paths:
+        for d in p:
+            if valid_dac.get(d):
+                del valid_dac[d]
+
+    valid_dac["fft"] = True
+    dac_graph = {k:v for k,v in graph.items() if valid_dac.get(k)}
+    for k,v in dac_graph.items():
+        dac_graph[k] = [d for d in v if dac_graph.get(d)]
     
     # Find how many of these have already visited dac
-    dac_paths = find_paths_bfs(graph,"fft","dac", valid_dac)        
-    print(len(dac_paths),"fft/dac paths found")    
-
+    dac_paths = find_paths_bfs(dac_graph,"fft","dac")
+    print(len(dac_paths),"fft->dac paths found")
 
     # Finally, find paths to out, excluding any previously visited nodes
     valid = {k: True for k in graph.keys()}
-    valid = {d:True for d in valid.keys() if d not in fft_paths}
-    valid = {d:True for d in valid.keys() if d not in dac_paths}
+    for p in fft_paths:
+        for d in p:
+            if valid.get(d):
+                del valid[d]
+    for p in dac_paths:
+        for d in p:
+            if valid.get(d):
+                del valid[d]
+    valid["fft"] = True
+    valid["dac"] = True
+    valid["out"] = True
 
-    paths = find_paths_bfs(graph,"dac","out", valid)
-    print(len(paths),"fft/dac.out paths found")        
+    out_graph = {k:v for k,v in graph.items() if valid.get(k)}
+    for k,v in out_graph.items():
+        out_graph[k] = [d for d in v if out_graph.get(d) is not None]
 
-    return
-
-    valid = {}
-    for device in graph.keys():
-        fft = path_exists(graph, device, "fft")
-        #dac = path_exists(graph, device, "dac")
-        if fft:
-            valid[device] = True
-
-    print(len(valid),"of",len(graph), "have path")
-
-    print(count_paths_bfs(graph, "svr","fft",valid))
-    #print(count_paths_bfs(graph, "fft","out",None))
-
-    c = 0
+    paths = find_paths_bfs(out_graph,"dac","out")
+    print(len(paths),"fft->dac->out paths found")
+    c = len(fft_paths) * len(dac_paths) * len(paths)
     print(f"Answer: {c} in {time.time() - t:.2f}s")
 
+    # 14582 Fft paths found
+    # 3744565 fft->dac paths found
+    # 7864 fft->dac->out paths found
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
