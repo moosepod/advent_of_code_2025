@@ -224,7 +224,11 @@ def area(rect):
     ul,lr = rect[0],rect[2]
     return (abs(ul[X] - lr[X])+1) * (abs(ul[Y] - lr[Y])+1)
     
-def solve_part_2(path="day_9/inputs/test.txt"):
+def solve_part_2_try_2(path="day_9/inputs/test.txt"):
+    # New idea
+    # - Follow the polygon, building rects along the way
+    # - With every new point, see if line enters previous rect. If it does, throw out the rect
+    ###
     # Points represent red tiles
     # Red tiles are joined by lines. Pairs of points repesent lines. Each line is always vertical or horizontal
     # The whole thing forms one continuous concave polygon (IS THIS TRUE)
@@ -265,6 +269,99 @@ def solve_part_2(path="day_9/inputs/test.txt"):
     print(len(rects), len(valid_rects))
     for rect in valid_rects:
         print(rect, area(rect))
+
+def line_line(p1,p2, r1, r2):
+    x1,y1 = p1
+    x2,y2 = p2
+    x3,y3 = r1
+    x4,y4 = r2
+    
+    uA = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / (((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1)) or 1)
+    uB = ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3)) / (((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1)) or 1)
+
+    if uA >= 0 and uA <= 1 and uB >= 0 and uB <= 1:
+        return True
+
+    return False
+
+        
+def valid_rect(rect, polygon):
+    # If any line in the polygon intersects the rect, it is not valid
+    # https://www.jeffreythompson.org/collision-detection/line-rect.php
+
+    for p1,p2 in polygon:
+        for i in range(0,3):
+            if line_line(p1,p2, rect[i],rect[i+1]):
+                return False
+
+    return True
+
+def any_point_in_rect(rect,points):
+    ul, _, lr, _ = rect
+    
+    for p in points:
+        if p[X] > ul[X] and p[X] < lr[X] and p[Y] > ul[Y] and p[Y] < lr[Y]:
+            return True
+        
+    return False
+
+def vaiid_rect(rect, polygon):
+    return True
+
+def solve_part_2(path="day_9/inputs/test.txt"):
+    t = time.time()
+    points = []
+    with open(path) as f:
+        for line in f:
+            points.append(tuple([int(x) for x in line.strip().split(',')]))
+
+    # Turn into polygon
+    polygon = []
+    for i in range(0,len(points)-1):
+        line = (points[i],points[i+1])
+        polygon.append(line)
+
+    # Build rects 
+    rects = set()
+    for p1, p2 in itertools.combinations(points,2):
+        ul = min(p1[X],p2[X]),min(p1[Y],p2[Y])
+        lr = max(p1[X],p2[X]),max(p1[Y],p2[Y])
+        rect = (ul, (lr[X],ul[Y]), lr, (ul[X],lr[Y]))
+        rects.add((area(rect), rect))
+
+    rects = list(rects)
+    rects.sort(key=lambda x:x[0], reverse=True)
+    for a, rect in rects[1:]:
+        if valid_rect(rect,polygon):
+            print(f"Answer: {a} in {time.time() - t:.2f}s")
+            return
+                
+    print("None found")
+    return
+
+    # Sort rects by size
+
+    max_area = max(area(rect) for rect in rects)
+    print(f"Answer: {max_area} in {time.time() - t:.2f}s")
+
+    """
+    print("Points:",len(points))
+    print("Points**4:",len(points)**4)    
+    print("Rects:",len(rects))
+    print("Max area:",max(area(rect) for rect in rects))    
+    print("Min area:",min(area(rect) for rect in rects))
+    
+    print("Max width:",max(abs(rect[0][X] - rect[2][X]) for rect in rects))
+    print("Max height:",max(abs(rect[0][Y] - rect[2][Y]) for rect in rects))
+
+    
+    print("Min x:",min(rect[0][X] for rect in rects))
+    print("Min y:",min(rect[0][Y] for rect in rects))    
+    print("Max x:",max(rect[2][X] for rect in rects))
+    print("Max y:",max(rect[2][Y] for rect in rects))    
+    """
+
+    
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
