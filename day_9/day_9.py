@@ -284,18 +284,6 @@ def line_line(p1,p2, r1, r2):
 
     return False
 
-        
-def valid_rect(rect, polygon):
-    # If any line in the polygon intersects the rect, it is not valid
-    # https://www.jeffreythompson.org/collision-detection/line-rect.php
-
-    for p1,p2 in polygon:
-        for i in range(0,3):
-            if line_line(p1,p2, rect[i],rect[i+1]):
-                return False
-
-    return True
-
 def any_point_in_rect(rect,points):
     ul, _, lr, _ = rect
     
@@ -305,10 +293,23 @@ def any_point_in_rect(rect,points):
         
     return False
 
-def vaiid_rect(rect, polygon):
+def is_valid_rect(rect, polygon):
+    ul, _, lr, _ = rect
+
+    # Only look at inside points
+    
+    
+    # This checks for insets
+    for p1, p2 in polygon:
+        for p in (p1, p2):
+            if p[X] > ul[X] and p[X] < lr[X] and p[Y] > ul[Y] and p[Y] < lr[Y]:
+                return False
+    print(rect,"is valid")
     return True
 
-def solve_part_2(path="day_9/inputs/test.txt"):
+def solve_part_2(path="day_9/inputs/test2.txt"):
+    # Go through each polygon, largest first
+    # If there are any vertical lines that start or end, invalid
     t = time.time()
     points = []
     with open(path) as f:
@@ -331,8 +332,8 @@ def solve_part_2(path="day_9/inputs/test.txt"):
 
     rects = list(rects)
     rects.sort(key=lambda x:x[0], reverse=True)
-    for a, rect in rects[1:]:
-        if valid_rect(rect,polygon):
+    for a, rect in rects:
+        if is_valid_rect(rect,polygon):
             print(f"Answer: {a} in {time.time() - t:.2f}s")
             return
                 
