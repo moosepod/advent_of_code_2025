@@ -142,6 +142,38 @@ def solve_part_2(path="day_9/inputs/input.txt"):
     for i in range(0,len(points)-1):
         line = (points[i],points[i+1])
         polygon.append(line)
+    polygon.append((points[-1],points[0]))
+    # List of lines for each line
+
+    bounds = ((min(p[X] for p in points),min(p[Y] for p in points)),
+              (max(p[X] for p in points),min(p[Y] for p in points)),
+              (max(p[X] for p in points),max(p[Y] for p in points)),
+              (min(p[X] for p in points),max(p[Y] for p in points)))
+
+    lines = []
+    for y in range(0, bounds[2][Y]+1):
+        lines.append([])
+        for p1,p2 in polygon:
+            ty,by = p1[Y],p2[Y]
+            if by < ty:
+                ty, by = by, ty
+            if ty == by and ty == y:
+                lines[-1].append(p1[X])
+                lines[-1].append(p2[X])
+            elif y >= ty and y <= by:
+                lines[-1].append(p1[X])
+                #print(">>>HERE", y, p1[X])
+    print("Done",len(lines))
+    
+    grid = {}
+    for y, ps in enumerate(lines):
+        for x in ps:
+            grid[(x,y)] = "#"
+
+    #print(dump_grid(grid,(13,13)))
+
+
+    return
 
     # Build rects 
     rects = set()
