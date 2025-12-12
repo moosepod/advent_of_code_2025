@@ -110,19 +110,76 @@ def load_puzzle(path):
                     
     return puzzle
 
-def solve_part_1(path="day_12/inputs/test.txt"):
-    # Pre-calcuate all rotations
-    t = time.time()
-    puzzle = load_puzzle(path)
+def dump_puzzle(puzzle):
     for idx, presents in enumerate(puzzle.presents):
-        print(">>>>",idx)        
         for present in presents:
             print(dump_grid(present, (3,3)))
             print()
     for region in puzzle.regions:
         print(region)
-    a = 0
-    print(f"Answer: {a} in {time.time() - t:.2f}s")   
+
+def apply_present(present, p, grid, size):
+    for x in range(0,3):
+        for y in range(0,3):
+            tp = padd(p, (x,y))
+            if tp[X] >= size[X] or tp[Y] >= size[Y]:
+                return False
+            if present.get((x,y)) == '#':
+                if grid.get(tp) == '#':
+                    return False
+                grid[tp] = '#'
+
+    return True
+        
+def fit_pieces(presents, region, present=0, counts=None,grid = None):
+    if counts is None:
+        counts = [0] * len(presents)
+    else:
+        if counts == targets:
+            return True
+
+    if grid is None:
+        grid = {}
+
+    for p in presents[present]:
+        grid = dict(grid)
+        apply_present(p, grid)
+        if fit_pieces(presents, region):
+            pass
+
+    return False
+    
+    
+    
+
+def solve_part_1(path="day_12/inputs/test.txt"):
+    # Pre-calcuate all rotations
+    t = time.time()
+    puzzle = load_puzzle(path)
+
+    # Pick a piece
+    # For all combinations of that piece with pieces (max is 16 (edge) + 9 (overlap), combine and see if there is any collision or crossing bounds
+    # If there is, stop
+    # If piece total reached, return success
+    # If
+
+    grid = {}
+    size = (5,5)
+    print(dump_grid(grid,size))
+    print()
+    assert apply_present(puzzle.presents[0][0], (0,0), grid,size)
+    print(dump_grid(grid,size))
+    print()
+    assert apply_present(puzzle.presents[0][0], (2,1), grid,size)
+    print(dump_grid(grid,size))    
+    return
+
+    count = 0
+    for region in puzzle.regions:
+        if fit_pieces(puzzle.pieces, region):
+            count += 1
+
+    print(f"Answer: {count} in {time.time() - t:.2f}s")   
 
 def solve_part_2(path="day_12/inputs/test.txt"):
     t = time.time()
