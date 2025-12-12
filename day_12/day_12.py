@@ -52,10 +52,10 @@ def psub(p1: Point, p2: Point) -> Point:
 class Region:
     size: Size
     targets: list[int]
-
+    
 @dataclass
 class Puzzle:
-    presents: list[dict]
+    presents: list[list[dict]]
     regions: list[Region]
 
 def dump_grid(grid: Grid, size: Size, message: str="", int_grid=False, extra:dict[Point,str] = None, labels=False) -> str:
@@ -75,7 +75,18 @@ def dump_grid(grid: Grid, size: Size, message: str="", int_grid=False, extra:dic
                         c = "?"
             s+=str(c) if c is not None else '.'
     return s
-    
+
+def rotate(puzzle):
+    return {(2,0): puzzle.get((0,0)),
+            (2,1): puzzle.get((1,0)),
+            (2,2): puzzle.get((2,0)),
+            (1,0): puzzle.get((0,1)),
+            (1,1): puzzle.get((1,1)),
+            (1,2): puzzle.get((2,1)),
+            (0,0): puzzle.get((0,2)),
+            (0,1): puzzle.get((1,2)),
+            (0,2): puzzle.get((2,2))}                                                                                                                                          
+
 def load_puzzle(path):
     puzzle = Puzzle(presents=[], regions=[])
     y = 0
@@ -86,21 +97,28 @@ def load_puzzle(path):
                 puzzle.regions.append(Region(size=(int(w),int(h)), targets=[int(x) for x in s.split(' ')]))
             elif m := re.match(r"^(\d+):",line):
                 y = 0
-                puzzle.presents.append({})
+                puzzle.presents.append([{}])
             elif m := re.match(r"^([#.]+)", line):
                 for x,c in enumerate(m.group(1)):
                     if c == '#':
-                        puzzle.presents[-1][(x, y)] = "#"
+                        puzzle.presents[-1][-1][(x, y)] = "#"
                 y+=1
+
+    for presents in puzzle.presents:
+        for i in range(0,3):
+            presents.append(rotate(presents[-1]))
                     
     return puzzle
 
 def solve_part_1(path="day_12/inputs/test.txt"):
+    # Pre-calcuate all rotations
     t = time.time()
     puzzle = load_puzzle(path)
-    for idx, present in enumerate(puzzle.presents):
-        print(">>>>",idx)
-        print(dump_grid(present, (3,3)))
+    for idx, presents in enumerate(puzzle.presents):
+        print(">>>>",idx)        
+        for present in presents:
+            print(dump_grid(present, (3,3)))
+            print()
     for region in puzzle.regions:
         print(region)
     a = 0
