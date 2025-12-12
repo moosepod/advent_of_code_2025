@@ -99,6 +99,9 @@ def find_candidates(machine):
 def add_joltages(j1,j2):
     return [j1[i] + j2[i] for i in range(0, len(j1))]
 
+def sub_joltages(j1,j2):
+    return [j1[i] - j2[i] for i in range(0, len(j1))]
+
 def add_double_joltages(j1,j2):
     return [j1[i] + (j2[i] * 2) for i in range(0, len(j1))]
 
@@ -139,8 +142,6 @@ def solve_part_1(path="day_10/inputs/input.txt"):
     for machine in machines:
         m = solve_machine(machine)
         a += m                
-        #print(bits_to_lights(machine.target), m)
-
         
     print(f"Answer: {a} in {time.time() - t:.2f}s")
 
@@ -167,36 +168,67 @@ def apply_matches(matching, joltage, target_joltage):
             
             pressed += 2
 
+def find_min_joltage_idx(joltages):
+    min_joltage = min(joltages)
+    if min_joltage == 0:
+        return []
 
-def solve_part_2(path="day_10/inputs/test.txt"):
+    return [i for i in range(0, len(joltages)) if joltages[i] == min_joltage]
+            
+def solve_joltages(state, target_state, buttons, joltages, count=0, depth=0):
+    # Find lowest joltages
+    indexes = find_min_joltage_idx(joltages)
+    if not indexes:
+        return count
+
+    if len(indexes) > 1:
+        print("......multiple")
+        return -1
+
+    idx = indexes[0]
+
+    # Find buttons that touch this joltage
+    min_new_count = None
+    for button in [b for b in buttons if b.joltages[idx]]:
+        # Press the button N times where N is the index
+        pressed_joltages = joltages
+        pressed_state = state
+        press_count = joltages[idx]
+        for i in range(0, press_count):
+            pressed_state = pressed_state ^ button.mask
+            pressed_joltages = sub_joltages(pressed_joltages, button.joltages)
+
+        if min(pressed_joltages) >= 0:
+            new_count = solve_joltages(pressed_state, target_state, [b for b in buttons if b != button], pressed_joltages, count+press_count, depth+1)
+            if new_count and (min_new_count is None or new_count < min_new_count):
+                min_new_count = new_count
+
+    return min_new_count
+        
+def solve_part_2(path="day_10/inputs/input.txt"):
     t = time.time()
-    a = 0
 
-    # Any button applied twice is a nop
-    # So:
-    # - find all combos of single buttons that reach outcome
-    # -solve th rest
+    machines = load_machines(path)    
+    # Find the lowest, non-zero number
+    # Find the buttons that affect this number
+    # Press these buttons N times
+    # Find the next lowest number
+    # 2801, too low
     
-    machines = load_machines(path)
-    checked = 0
+    a = 0
+    error = 0
     for machine in machines:
-        candidates = find_candidates(machine)
-        min_presses = 10000
-        for candidate in candidates:
-            pressed = 0
-            joltages = [0] * machine.l
-            for b in candidate:
-                joltages = add_joltages(joltages, b.joltages)
-            matching = [(sum([j for j in b.joltages]), b) for b in machine.buttons if button_matching_joltage(machine.joltages, b)]
-            matching.sort(key=lambda x: x[0], reverse=True)
+        print(bits_to_lights(machine.target))
+        presses = solve_joltages(0,machine.target,machine.buttons, machine.joltages)
+        if presses is None or presses < 0:
+            print("... not found")
+            error += 1
+        else:
+            print("...",presses)
 
-            pressed = apply_matches(matching, joltages, machine.joltages)
-            if pressed and pressed < min_presses:
-                min_presses = pressed
-        print(min_presses)
 
-                    
-                    
+        a += presses
+    print(error,"errors out of",len(machines))
     print(f"Answer: {a} in {time.time() - t:.2f}s")
     
 if __name__ == "__main__":
