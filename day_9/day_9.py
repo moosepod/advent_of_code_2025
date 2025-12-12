@@ -93,41 +93,34 @@ def center(rect):
     ul, _, lr, _ = rect
     return (ul[X] + ((lr[X] - ul[X])//2), ul[Y] + ((lr[Y] - ul[Y])//2))
 
-def on_polygon(p, polygon):
-    for p1,p2 in polygon:
-        if p1[X] == p2[X] and p1[X] == p[X] and p[Y] >= p1[Y] and p[Y] <= p2[Y]:
-            return True
-        if p1[Y] == p2[Y] and p1[Y] == p[Y] and p[X] >= p1[X] and p[X] <= p2[X]:
-            return True
+def valid_rect_old(rect, lines, points):
+    for p in rect:
+        if p in points:
+            continue
+        l = len([x for x in lines[p[Y]] if p[X] <= x])
+        print(p, l, lines[p[Y]])
+        if l % 2 == 0:
+            return False
 
-    return False
+    return True
 
-def rect_fill_area(rect, polygon, bounds):
-    ul, _, lr, _ = bounds
-    q = queue.Queue()
-    visited = set()
-    q.put(center(rect))
+def valid_rect(rect, lines, points):
+    ul, _, lr, _ = rect
+    for y in range(ul[Y],lr[Y]+1):
+        # Check that rect is fully within the shape
+        if lines[y]:
+            x1,x2 = lines[y][0], lines[y][-1]
+            if ul[X] < x1 or ul[X] > x2 or lr[X] < x1 or lr[X] > x2:
+                return False
+                
+                
+            #l = len([x for x in lines[y] if x >= ul[X] and x <= lr[X]])
+            #print(y,l, lines[y])
+            #if l != 2:
+            #    return False
 
-    while not q.empty():
-        p = q.get()
-        visited.add(p)
-        if p[X] < ul[X] or p[X] > lr[X] or p[Y] < ul[Y] or p[Y] > lr[Y]:
-            # Out of bounds -- not a valid polygon
-            #print(p,"out of bounds")
-            return 0
+    return True
 
-        if on_polygon(p, polygon):
-            continue            
-
-        for d in NESW:
-            np = padd(p, d)
-            if np not in visited:
-                q.put(np)
-
-    return len(visited)
-    
-    
-    
 def solve_part_2(path="day_9/inputs/input.txt"):
     # Go through each polygon, largest first
     # If there are any vertical lines that start or end, invalid
@@ -137,6 +130,12 @@ def solve_part_2(path="day_9/inputs/input.txt"):
         for line in f:
             points.append(tuple([int(x) for x in line.strip().split(',')]))
 
+    #grid = {}
+    #for p in points:
+    #    grid[p] = '#'
+    #print(dump_grid(grid,(15,15)))
+    #print()
+    
     # Turn into polygon
     polygon = []
     for i in range(0,len(points)-1):
@@ -152,28 +151,28 @@ def solve_part_2(path="day_9/inputs/input.txt"):
 
     lines = []
     for y in range(0, bounds[2][Y]+1):
-        lines.append([])
+        line = []
         for p1,p2 in polygon:
             ty,by = p1[Y],p2[Y]
             if by < ty:
                 ty, by = by, ty
             if ty == by and ty == y:
-                lines[-1].append(p1[X])
-                lines[-1].append(p2[X])
+                line.append(p1[X])
+                line.append(p2[X])
             elif y >= ty and y <= by:
-                lines[-1].append(p1[X])
+                line.append(p1[X])
                 #print(">>>HERE", y, p1[X])
-    print("Done",len(lines))
-    
-    grid = {}
-    for y, ps in enumerate(lines):
-        for x in ps:
-            grid[(x,y)] = "#"
+        line = list(set(line))
+        line.sort()        
+        lines.append(line)
+                
+    print("Calculated",len(lines))
 
-    #print(dump_grid(grid,(13,13)))
-
-
-    return
+    #grid = {}
+    #for y,ps in enumerate(lines):
+    #    for x in ps:
+    #        grid[(x,y)] = '#'
+    #print(dump_grid(grid,(15,15)))
 
     # Build rects 
     rects = set()
@@ -190,16 +189,12 @@ def solve_part_2(path="day_9/inputs/input.txt"):
 
     rects = list(rects)
     rects.sort(key=lambda x:x[0], reverse=True)
-    midpoint = len(rects)//2
-    rects = rects[midpoint:midpoint+1]
+    #rects = [(24, ((2,3),(9,3),(9,5),(3,5)))]
     for a, rect in rects:
-        print(a,rect)
-        fa = rect_fill_area(rect, polygon, bounds)
-        if fa == a:
-            print(f"Answer: {a} in {time.time() - t:.2f}s")
+        #print("Testing:",a)
+        if valid_rect(rect, lines, points):
+            print(f"Answer: {a} ({rect}) in {time.time() - t:.2f}s")
             return
-        #print("...",fa,"!=",a)
-        break
                 
     print("None found")
     return
