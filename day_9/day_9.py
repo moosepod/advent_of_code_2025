@@ -1,4 +1,5 @@
 import math
+import queue
 import time
 import argparse
 import re
@@ -63,6 +64,10 @@ def dump_grid(grid: Grid, size: Size, message: str="", int_grid=False, extra:dic
             s+=str(c) if c is not None else '.'
     return s
 
+def area(rect):
+    ul,lr = rect[0],rect[2]
+    return (abs(ul[X] - lr[X])+1) * (abs(ul[Y] - lr[Y])+1)
+
 def solve_part_1(path="day_9/inputs/input.txt"):
     t = time.time()
     points = []
@@ -84,230 +89,46 @@ def solve_part_1(path="day_9/inputs/input.txt"):
     a = max_area
     print(f"Answer: {a} in {time.time() - t:.2f}s")    
 
-def draw_line(grid,size, p1, p2):
-    if p1[Y] == p2[Y]:
-        x1,x2 = p1[X],p2[X]
-        if x2 < x1:
-            x1,x2 = x2,x1
-        for x in range(x1,x2+1):
-            grid[(x,p1[Y])] = 'X'
-    elif p1[X] == p2[X]:
-        y1,y2 = p1[Y],p2[Y]
-        if y2 < y1:
-            y1,y2 = y2,y1
-        for y in range(y1,y2+1):
-            grid[(p1[X]),y] = 'X'
+def center(rect):
+    ul, _, lr, _ = rect
+    return (ul[X] + ((lr[X] - ul[X])//2), ul[Y] + ((lr[Y] - ul[Y])//2))
 
-    grid[p1] = '#'
-    grid[p2] = '#'
-
-def update_size(size, p1, p2):
-    # Adjust size
-    if p1[X] > size[X]:
-        size = p1[X]+1,size[Y]
-    if p2[X] > size[X]:
-        size = p2[X]+1,size[Y]
-    if p1[Y] > size[Y]:
-        size = size[X], p1[Y]+1
-    if p2[Y] > size[Y]:
-        size = size[X], p2[Y]+1
-
-    return size
-
-def cross(a, b):
-    return a[X]*b[Y] - a[Y]*b[X]
-
-def orient(a,b,c):
-    return cross(psub(b,a), psub(c,a))
-
-def proper_inter(a,b,c,d):
-    oa = orient(c,d,a)
-    ob = orient(c,d,b)
-    oc = orient(a,b,c)
-    od = orient(a,b,d)
-
-    return oa*ob < 0 and oc*od < 0
-
-def intercept(ul, lr, polygon):
-    for p1, p2 in polygon:
-        #print("Checking", (ul,lr), (p1,p2))
-        if proper_inter(ul, lr, p1, p2):
-            #print("....intercept")
-            return True
-
-    return False
-
-
-
-def solve_part_2_old(path="day_9/inputs/test.txt"):
-    # Treat lines as a polygon
-    # From each edge of the space, find the first intersection with a line
-    # TRY THIS IDEA: does any line from UL to LR intersect any line of the polygon. If so, throw it out!
-    t = time.time()
-    grid = {}
-    size = (0,0)
-
-    # Load points
-    points = []
-    with open(path) as f:
-        for line in f:
-            points.append(tuple([int(x) for x in line.strip().split(',')]))
-
-    # Turn into polygon
-    polygon = []
-    for i in range(0,len(points)-1):
-        polygon.append((points[i],points[i+1]))
-
-    polygon.append((points[0],points[-1]))
-
+def on_polygon(p, polygon):
     for p1,p2 in polygon:
-        size = update_size(size, p1, p2)
-
-    for p1,p2 in polygon:        
-        draw_line(grid, size, p1,p2)
-        grid[p1] = '#'
-        grid[p2] = '#'
-
-    #print(dump_grid(grid, size))
-
-    rects = set()
-    for p1, p2 in itertools.combinations(points,2):
-        ul = min(p1[X],p2[X]),min(p1[Y],p2[Y])
-        lr = max(p1[X],p2[X]),max(p1[Y],p2[Y])        
-        
-        rects.add((ul, (lr[X],ul[Y]), lr, (ul[X],lr[Y])))
-
-    # Check "winning" rect and see if it makes sense?
-    #print("Checking intersections for",len(rects),"rects")
-    # Too high:3044300328
-    # Too high 2970174461
-    #          3161345466
-    # too large
-    max_area = 0
-    for idx,(ul,ur, lr, ll) in enumerate(rects):
-        if idx % 1000 == 0:
-            print("Line",idx)
-        if not intercept(ul, lr, polygon) and not intercept(ur,ll, polygon):
-            a = (abs(ul[X] - lr[X])+1) * (abs(ul[Y] - lr[Y])+1)
-            #print(ul,ur,lr,ll,a)
-            if a > max_area:
-                max_area = a
-
-    #print(f"Answer: {max_area} in {time.time() - t:.2f}s")    
-
-def point_on_polygon(p, polygon):
-    for p1, p2 in polygon:
-        if p1[X] == p[X] and p2[X] == p[X]:
-            y1, y2 = p1[Y], p2[Y]
-            if y2 < y1:
-                y1, y2 = y2,y1
-            if p[Y] >= y1 and p[Y] <= y2:
-                return True
-        if p1[Y] == p[Y] and p2[Y] == p[Y]:
-            x1, x2 = p1[X], p2[X]
-            if x2 < x1:
-                x1, x2 = x2,x1
-            if p[X] >= x1 and p[X] <= x2:
-                return True
-
-    return False
-    
-def rect_in_polygon(rect, polygon):
-    # This logic doesn't work even on sample data
-    for v in rect:
-        if not point_on_polygon(v,polygon):
-            return False
-
-    return True
-
-def area(rect):
-    ul,lr = rect[0],rect[2]
-    return (abs(ul[X] - lr[X])+1) * (abs(ul[Y] - lr[Y])+1)
-    
-def solve_part_2_try_2(path="day_9/inputs/test.txt"):
-    # New idea
-    # - Follow the polygon, building rects along the way
-    # - With every new point, see if line enters previous rect. If it does, throw out the rect
-    ###
-    # Points represent red tiles
-    # Red tiles are joined by lines. Pairs of points repesent lines. Each line is always vertical or horizontal
-    # The whole thing forms one continuous concave polygon (IS THIS TRUE)
-    # "Inside" polygon is green
-    # Need largest rectangle with two red tiles as corners that is filled with green tiles
-    # This means any rectangle will have at least two tiles in.
-    # EDGE of polygon is part of polygon in thise case
-    # Core issue: what is inside vs outside.
-    # Too large to flood fill or store as actual dict (or anything iterative
-    # Not enough to know that all points of rect are valid, because you can have carveouts
-    # For it to be valid, all 4 points have to be on one of the polygon lines, but this isn't sufficient. It might make the searchs space smaller though
-
-    # Load points
-    points = []
-    with open(path) as f:
-        for line in f:
-            points.append(tuple([int(x) for x in line.strip().split(',')]))
-
-    # Turn into polygon
-    polygon = []
-    for i in range(0,len(points)-1):
-        polygon.append((points[i],points[i+1]))
-
-    polygon.append((points[0],points[-1]))
-
-    rects = set()
-    for p1, p2 in itertools.combinations(points,2):
-        ul = min(p1[X],p2[X]),min(p1[Y],p2[Y])
-        lr = max(p1[X],p2[X]),max(p1[Y],p2[Y])        
-        
-        rects.add((ul, (lr[X],ul[Y]), lr, (ul[X],lr[Y])))
-
-    valid_rects = []
-    for rect in rects:
-        if rect_in_polygon(rect, polygon):
-            valid_rects.append(rect)
-
-    print(len(rects), len(valid_rects))
-    for rect in valid_rects:
-        print(rect, area(rect))
-
-def line_line(p1,p2, r1, r2):
-    x1,y1 = p1
-    x2,y2 = p2
-    x3,y3 = r1
-    x4,y4 = r2
-    
-    uA = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / (((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1)) or 1)
-    uB = ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3)) / (((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1)) or 1)
-
-    if uA >= 0 and uA <= 1 and uB >= 0 and uB <= 1:
-        return True
-
-    return False
-
-def any_point_in_rect(rect,points):
-    ul, _, lr, _ = rect
-    
-    for p in points:
-        if p[X] > ul[X] and p[X] < lr[X] and p[Y] > ul[Y] and p[Y] < lr[Y]:
+        if p1[X] == p2[X] and p1[X] == p[X] and p[Y] >= p1[Y] and p[Y] <= p2[Y]:
             return True
-        
+        if p1[Y] == p2[Y] and p1[Y] == p[Y] and p[X] >= p1[X] and p[X] <= p2[X]:
+            return True
+
     return False
 
-def is_valid_rect(rect, polygon):
-    ul, _, lr, _ = rect
+def rect_fill_area(rect, polygon, bounds):
+    ul, _, lr, _ = bounds
+    q = queue.Queue()
+    visited = set()
+    q.put(center(rect))
 
-    # Only look at inside points
+    while not q.empty():
+        p = q.get()
+        visited.add(p)
+        if p[X] < ul[X] or p[X] > lr[X] or p[Y] < ul[Y] or p[Y] > lr[Y]:
+            # Out of bounds -- not a valid polygon
+            #print(p,"out of bounds")
+            return 0
+
+        if on_polygon(p, polygon):
+            continue            
+
+        for d in NESW:
+            np = padd(p, d)
+            if np not in visited:
+                q.put(np)
+
+    return len(visited)
     
     
-    # This checks for insets
-    for p1, p2 in polygon:
-        for p in (p1, p2):
-            if p[X] > ul[X] and p[X] < lr[X] and p[Y] > ul[Y] and p[Y] < lr[Y]:
-                return False
-    print(rect,"is valid")
-    return True
-
-def solve_part_2(path="day_9/inputs/test2.txt"):
+    
+def solve_part_2(path="day_9/inputs/input.txt"):
     # Go through each polygon, largest first
     # If there are any vertical lines that start or end, invalid
     t = time.time()
@@ -330,12 +151,23 @@ def solve_part_2(path="day_9/inputs/test2.txt"):
         rect = (ul, (lr[X],ul[Y]), lr, (ul[X],lr[Y]))
         rects.add((area(rect), rect))
 
+    bounds = ((min(p[X] for p in points)-1,min(p[Y] for p in points)-1),
+              (max(p[X] for p in points)+1,min(p[Y] for p in points)-1),
+              (max(p[X] for p in points)+1,max(p[Y] for p in points)+1),
+              (min(p[X] for p in points)-1,max(p[Y] for p in points)+1))
+
     rects = list(rects)
     rects.sort(key=lambda x:x[0], reverse=True)
+    midpoint = len(rects)//2
+    rects = rects[midpoint:midpoint+1]
     for a, rect in rects:
-        if is_valid_rect(rect,polygon):
+        print(a,rect)
+        fa = rect_fill_area(rect, polygon, bounds)
+        if fa == a:
             print(f"Answer: {a} in {time.time() - t:.2f}s")
             return
+        #print("...",fa,"!=",a)
+        break
                 
     print("None found")
     return
