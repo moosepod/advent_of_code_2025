@@ -155,7 +155,6 @@ def joltage_exceeded(a, b):
 
 def apply_matches(matching, joltage, target_joltage):
     pressed = 0
-    print(joltage,target_joltage)
     for _, button in matching:
         while True:
             if joltage == target_joltage:
@@ -169,39 +168,38 @@ def apply_matches(matching, joltage, target_joltage):
             pressed += 2
 
 def find_min_joltage_idx(joltages):
-    min_joltage = min(joltages)
-    if min_joltage == 0:
-        return []
-
-    return [i for i in range(0, len(joltages)) if joltages[i] == min_joltage]
+    return [i for i in range(0, len(joltages)) if joltages[i] == min([j for j in joltages if j])]
             
 def solve_joltages(state, target_state, buttons, joltages, count=0, depth=0):
     # Find lowest joltages
+    
+    if max(joltages) == 0:
+        return count
+    
     indexes = find_min_joltage_idx(joltages)
     if not indexes:
-        return count
+        if state == target_state:
+            return count
+        
+        return None
 
-    if len(indexes) > 1:
-        print("......multiple")
-        return -1
-
-    idx = indexes[0]
-
-    # Find buttons that touch this joltage
     min_new_count = None
-    for button in [b for b in buttons if b.joltages[idx]]:
-        # Press the button N times where N is the index
-        pressed_joltages = joltages
-        pressed_state = state
-        press_count = joltages[idx]
-        for i in range(0, press_count):
-            pressed_state = pressed_state ^ button.mask
-            pressed_joltages = sub_joltages(pressed_joltages, button.joltages)
+    
+    for idx in indexes:
+        # Find buttons that touch this joltage
+        for button in [b for b in buttons if b.joltages[idx]]:
+            # Press the button N times where N is the index
+            pressed_joltages = joltages
+            pressed_state = state
+            press_count = joltages[idx]
+            for i in range(0, press_count):
+                pressed_state = pressed_state ^ button.mask
+                pressed_joltages = sub_joltages(pressed_joltages, button.joltages)
 
-        if min(pressed_joltages) >= 0:
-            new_count = solve_joltages(pressed_state, target_state, [b for b in buttons if b != button], pressed_joltages, count+press_count, depth+1)
-            if new_count and (min_new_count is None or new_count < min_new_count):
-                min_new_count = new_count
+            if min(pressed_joltages) >= 0: # Stop if anything goes below zero
+                new_count = solve_joltages(pressed_state, target_state, [b for b in buttons if b.mask != button.mask], pressed_joltages, count+press_count, depth+1)
+                if new_count and  (min_new_count is None or new_count < min_new_count):
+                    min_new_count = new_count
 
     return min_new_count
         
@@ -214,6 +212,7 @@ def solve_part_2(path="day_10/inputs/input.txt"):
     # Press these buttons N times
     # Find the next lowest number
     # 2801, too low
+    # 3143, too low
     
     a = 0
     error = 0
@@ -228,6 +227,7 @@ def solve_part_2(path="day_10/inputs/input.txt"):
 
 
         a += presses
+
     print(error,"errors out of",len(machines))
     print(f"Answer: {a} in {time.time() - t:.2f}s")
     
