@@ -168,51 +168,126 @@ def apply_matches(matching, joltage, target_joltage):
             pressed += 2
 
 def find_min_joltage_idx(joltages):
-    return [i for i in range(0, len(joltages)) if joltages[i] == min([j for j in joltages if j])]
-            
-def solve_joltages(state, target_state, buttons, joltages, count=0, depth=0):
-    # Find lowest joltages
-    
-    if max(joltages) == 0:
-        return count
-    
-    indexes = find_min_joltage_idx(joltages)
-    if not indexes:
+    l = [j for j in joltages if j]
+    if not l:
+        return []
+    return [i for i in range(0, len(joltages)) if joltages[i] == min(l)]
+
+def solve_joltages_tmp(joltages, buttons, state, target_state, count=0):
+    if sum(joltages) == 0:
         if state == target_state:
             return count
-        
+        return None
+    
+    # Find the lowest non-zero joltages
+    indexes = find_min_joltage_idx(joltages)
+    if not indexes:
+        if state == target_state:        
+            return count
         return None
 
-    min_new_count = None
+    min_count = None
     
-    for idx in indexes:
-        # Find buttons that touch this joltage
-        for button in [b for b in buttons if b.joltages[idx]]:
-            # Press the button N times where N is the index
-            pressed_joltages = joltages
+    for button in buttons:
+        if sum([button.joltages[i] for i in range(0,len(joltages)) if i in indexes]) == len(indexes):
+            pressed_joltages = joltages.copy()
+            press_count = joltages[indexes[0]]
             pressed_state = state
-            press_count = joltages[idx]
+            for i in range(0, press_count):
+                pressed_state = pressed_state ^ button.mask                
+                pressed_joltages = sub_joltages(pressed_joltages, button.joltages)
+            pressed_buttons = [b for b in buttons if b.mask != button.mask]
+            new_count = solve_joltages(pressed_joltages, pressed_buttons, pressed_state, target_state, count+press_count)
+            if new_count:
+                if min_count is None or new_count < min_count:
+                    min_count = new_count
+
+    return min_count
+
+def solve_joltages(joltages, buttons, target_state, state, count = 0):
+    # Do we need to re-sort every pass through?
+    # joltages could change
+    if min(joltage.keys()) < 0:
+        # Have pressed too many times
+        return None
+    if len(joltages) == 0:
+        if state == target_state:
+            return count
+        return None
+
+    min_count = None
+    for press_count, button_indexes in joltages:
+        for idx in button_indexes:
+            button = buttons[idx]
+            pressed_joltages = joltages.copy()
+            pressed_state = state
+
+            # Handle pressing the button
             for i in range(0, press_count):
                 pressed_state = pressed_state ^ button.mask
-                pressed_joltages = sub_joltages(pressed_joltages, button.joltages)
 
-            if min(pressed_joltages) >= 0: # Stop if anything goes below zero
-                new_count = solve_joltages(pressed_state, target_state, [b for b in buttons if b.mask != button.mask], pressed_joltages, count+press_count, depth+1)
-                if new_count and  (min_new_count is None or new_count < min_new_count):
-                    min_new_count = new_count
+            
 
-    return min_new_count
+                t = []
+                for k,v in pressed_voltages:
+                    if idx in v:
+                        t[k--] = v
+                    else:
+                        t[k] = v
+                pressed_voltages = t
+                        
+            c = solve_joltages(pressed_joltages, buttons, target_state, pressed_state, count + press_count)
+            if min_count is not None and c is not None and c < min_count:
+                min_count = c
         
-def solve_part_2(path="day_10/inputs/input.txt"):
+    return min_count
+
+def group_and_sort_joltages(joltages):
+    grouped_joltages = {}
+    for idx, joltage in enumerate(joltages):
+        if grouped_joltages.get(joltage) is None:
+            grouped_joltages[joltage] = []
+        grouped_joltages[joltage].append(idx)
+
+    target_joltages = list(grouped_joltages.items())
+    target_joltages.sort(key=lambda x: x[0])
+    return target_joltages
+    
+def solve_part_2(path="day_10/inputs/test.txt"):
     t = time.time()
 
+    # NOTES FOR REDO OF SOLVE
+    # Generate state object -- has target joltages, current state, current count
+    # Sort joltages each passthrough
+    # Check joltages/state:
+    # - joltages all 0 and state matches, valid.
+    # - joltages all 0 and state doesn't match, invalid
+    # - any joltage below 0, invalid
+    # Can't see any reason this won't work? Combinatorics shouldn't be too bad?
+
     machines = load_machines(path)    
-    # Find the lowest, non-zero number
+    
     # Find the buttons that affect this number
     # Press these buttons N times
     # Find the next lowest number
     # 2801, too low
     # 3143, too low
+
+    a = 0
+    for machine in machines:
+        # Sort targets by joltage
+        # Group targets into identical joltages
+        target_joltages = group_and_sort_joltages(machine.joltages)
+        
+        print(bits_to_lights(machine.target))
+        presses = solve_joltages(target_joltages, machine.buttons, machine.target, 0)
+        assert presses
+        print(">>>", presses)
+        a += presses
+
+    print(f"Answer: {a} in {time.time() - t:.2f}s")
+    
+    return
     
     a = 0
     error = 0
