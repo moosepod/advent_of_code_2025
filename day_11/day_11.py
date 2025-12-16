@@ -139,10 +139,6 @@ def solve_part_2(path="day_11/inputs/input.txt"):
     c = len(fft_paths) * len(dac_paths) * len(paths)
     print(f"Answer: {c} in {time.time() - t:.2f}s")
 
-    # 14582 Fft paths found
-    # 3744565 fft->dac paths found
-    # 7864 fft->dac->out paths found
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("part")
