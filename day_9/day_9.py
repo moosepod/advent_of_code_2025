@@ -24,27 +24,11 @@ Y = 1
 P = 0
 V = 1
 
-LABEL_OFFSET = -2
-
-DIRECTIONS = {
-    "NE": (1,-1), 
-    "E": (1,0), 
-    "SE": (1,1), 
-    "S": (0,1), 
-    "SW": (-1,1), 
-    "W": (-1,0), 
-    "NW": (-1,-1), 
-    "N": (0,-1), 
-    }
-
-NESW = (DIRECTIONS["N"], DIRECTIONS["E"], DIRECTIONS["S"], DIRECTIONS["W"])
-
 def padd(p1: Point, p2: Point) -> Point:
     return (p1[X] + p2[X], p1[Y] + p2[Y])
 
 def psub(p1: Point, p2: Point) -> Point:
     return (p1[X] - p2[X], p1[Y] - p2[Y])
-
 
 def dump_grid(grid: Grid, size: Size, message: str="", int_grid=False, extra:dict[Point,str] = None, labels=False) -> str:
     s = message
@@ -85,24 +69,8 @@ def solve_part_1(path="day_9/inputs/input.txt"):
             max_area = a
             rect = (p1,p2)
 
-    print(rect)
     a = max_area
     print(f"Answer: {a} in {time.time() - t:.2f}s")    
-
-def center(rect):
-    ul, _, lr, _ = rect
-    return (ul[X] + ((lr[X] - ul[X])//2), ul[Y] + ((lr[Y] - ul[Y])//2))
-
-def valid_rect_old(rect, lines, points):
-    for p in rect:
-        if p in points:
-            continue
-        l = len([x for x in lines[p[Y]] if p[X] <= x])
-        print(p, l, lines[p[Y]])
-        if l % 2 == 0:
-            return False
-
-    return True
 
 def valid_rect(rect, lines, points):
     ul, _, lr, _ = rect
@@ -112,13 +80,6 @@ def valid_rect(rect, lines, points):
             x1,x2 = lines[y][0], lines[y][-1]
             if ul[X] < x1 or ul[X] > x2 or lr[X] < x1 or lr[X] > x2:
                 return False
-                
-                
-            #l = len([x for x in lines[y] if x >= ul[X] and x <= lr[X]])
-            #print(y,l, lines[y])
-            #if l != 2:
-            #    return False
-
     return True
 
 def solve_part_2(path="day_9/inputs/input.txt"):
@@ -129,12 +90,6 @@ def solve_part_2(path="day_9/inputs/input.txt"):
     with open(path) as f:
         for line in f:
             points.append(tuple([int(x) for x in line.strip().split(',')]))
-
-    #grid = {}
-    #for p in points:
-    #    grid[p] = '#'
-    #print(dump_grid(grid,(15,15)))
-    #print()
     
     # Turn into polygon
     polygon = []
@@ -142,8 +97,8 @@ def solve_part_2(path="day_9/inputs/input.txt"):
         line = (points[i],points[i+1])
         polygon.append(line)
     polygon.append((points[-1],points[0]))
+    
     # List of lines for each line
-
     bounds = ((min(p[X] for p in points),min(p[Y] for p in points)),
               (max(p[X] for p in points),min(p[Y] for p in points)),
               (max(p[X] for p in points),max(p[Y] for p in points)),
@@ -161,18 +116,11 @@ def solve_part_2(path="day_9/inputs/input.txt"):
                 line.append(p2[X])
             elif y >= ty and y <= by:
                 line.append(p1[X])
-                #print(">>>HERE", y, p1[X])
         line = list(set(line))
         line.sort()        
         lines.append(line)
                 
     print("Calculated",len(lines))
-
-    #grid = {}
-    #for y,ps in enumerate(lines):
-    #    for x in ps:
-    #        grid[(x,y)] = '#'
-    #print(dump_grid(grid,(15,15)))
 
     # Build rects 
     rects = set()
@@ -189,9 +137,7 @@ def solve_part_2(path="day_9/inputs/input.txt"):
 
     rects = list(rects)
     rects.sort(key=lambda x:x[0], reverse=True)
-    #rects = [(24, ((2,3),(9,3),(9,5),(3,5)))]
     for a, rect in rects:
-        #print("Testing:",a)
         if valid_rect(rect, lines, points):
             print(f"Answer: {a} ({rect}) in {time.time() - t:.2f}s")
             return
@@ -199,29 +145,6 @@ def solve_part_2(path="day_9/inputs/input.txt"):
     print("None found")
     return
 
-    # Sort rects by size
-
-    max_area = max(area(rect) for rect in rects)
-    print(f"Answer: {max_area} in {time.time() - t:.2f}s")
-
-    """
-    print("Points:",len(points))
-    print("Points**4:",len(points)**4)    
-    print("Rects:",len(rects))
-    print("Max area:",max(area(rect) for rect in rects))    
-    print("Min area:",min(area(rect) for rect in rects))
-    
-    print("Max width:",max(abs(rect[0][X] - rect[2][X]) for rect in rects))
-    print("Max height:",max(abs(rect[0][Y] - rect[2][Y]) for rect in rects))
-
-    
-    print("Min x:",min(rect[0][X] for rect in rects))
-    print("Min y:",min(rect[0][Y] for rect in rects))    
-    print("Max x:",max(rect[2][X] for rect in rects))
-    print("Max y:",max(rect[2][Y] for rect in rects))    
-    """
-
-    
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
